@@ -15,7 +15,7 @@ export const retrievedSourceSchema = sourceSchema.extend({
   retrievedAt: z.iso.datetime(),
   contentType: z.string(),
   truncated: z.boolean(),
-  extractionQuality: z.enum(["article", "fallback", "plain-text"]),
+  extractionQuality: z.enum(["article", "fallback", "plain-text", "pdf-text"]),
 });
 
 export type Source = z.infer<typeof sourceSchema>;

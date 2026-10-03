@@ -8,6 +8,10 @@ const envSchema = z.object({
   FETCH_TIMEOUT_MS: z.coerce.number().int().min(100).max(30000).default(10000),
   MAX_RESPONSE_BYTES: z.coerce.number().int().min(1024).max(5000000).default(2000000),
   MAX_REDIRECTS: z.coerce.number().int().min(0).max(5).default(3),
+}).superRefine((config, context) => {
+  if (config.SEARCH_PROVIDER === "brave" && !config.BRAVE_SEARCH_API_KEY) {
+    context.addIssue({ code: "custom", path: ["BRAVE_SEARCH_API_KEY"], message: "A nonblank key is required for Brave search." });
+  }
 });
 
 export function readConfig(env: Record<string, string | undefined> = process.env) {

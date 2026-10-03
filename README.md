@@ -42,13 +42,20 @@ Both tools return model-facing context and structured evidence. Search snippets,
 
 ## Retrieval limits
 
-Defaults: **5 search results**, **20,000 extracted characters**, a **10-second retrieval deadline**, **2 MB per response**, and **3 redirects**. Configuration values have hard upper bounds; see `.env.example`.
+Defaults: **5 search results**, **20,000 extracted characters**, a **10-second retrieval deadline**, **2 MB for both encoded and decoded responses**, and **3 redirects**. Configuration values have hard upper bounds; see `.env.example`.
 
 - Only HTTP/HTTPS on standard ports; URLs containing credentials are rejected.
 - Private, loopback, link-local, reserved, and transition addresses are blocked. All DNS answers are checked, the connection uses a checked address, and every redirect is revalidated.
-- HTML and plain text are supported. PDFs, compressed-only responses, authenticated/paywalled pages, and sites blocking automated access may be unavailable. No credentials or cookies are sent to source sites.
+- HTML, plain text, and text-bearing PDFs are supported, including gzip, deflate, and Brotli responses. PDFs served as generic binary data require a PDF header in the first 1,024 bytes. Unsupported/stacked encodings are rejected. Authenticated/paywalled pages and sites blocking automated access may be unavailable. No credentials or cookies are sent to source sites.
 - Mozilla Readability and JSDOM extract text without executing scripts or loading external resources. JavaScript-only pages may return little or no text.
+- PDF.js extracts PDF text in a memory-limited worker with a separate 10-second extraction deadline, at most 20 pages, and the same extracted-character limit. It loads only the already retrieved bytes, disables evaluation, and terminates the worker on cancellation or timeout. Scanned PDFs need OCR; encrypted/damaged documents return a source-specific error. Tables, figures, and text order may be incomplete.
 - Missing dates, partial extraction, redirects, and truncation are visible.
+
+## Brief evidence budget
+
+Brief requests share a **32,000-character budget for serialized evidence**, including metadata and JSON escaping. Successfully read sources are deduplicated by final URL and receive shares of the remaining budget. Keyword-matched text excerpts retain offsets into the retrieved text, source metadata, and partial-extraction flags. Matching selects passages; it does not verify relevance or claims. Full retrieved text stays available on source cards. The sidebar shows budget usage and whether text was omitted. Instructions add fewer than 2,000 characters to the request.
+
+The research view is split into the search form, source cards, brief panel, workspace coordinator, and a retrieval hook. The hook keeps successful and failed reads separately, guards against overlapping batches, and stops UI updates when its workspace unmounts.
 
 ## Check and build
 

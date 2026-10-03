@@ -5,6 +5,8 @@ import { ResearchFailure } from "./errors.js";
 import type { Page } from "./safe-fetch.js";
 import { publicationDate, sourceId } from "./source-utils.js";
 
+const blockSelector = "p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, br, div, section, article, main, ul, ol, dl, dt, dd, figure, figcaption, table, tr, td, th";
+
 export function cleanText(text: string) {
   return text.replace(/\r\n?/g, "\n").replace(/[\t\u00a0 ]+/g, " ")
     .replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
@@ -24,8 +26,8 @@ export function extractText(page: Page, requestedUrl: string, maxChars: number):
     const dom = new JSDOM(page.body, { url: page.url });
     try {
       const document = dom.window.document;
-      title = cleanText(document.querySelector('meta[property="og:title"]')?.getAttribute("content") ??
-        document.title ?? "") || title;
+      title = cleanText(document.querySelector('meta[property="og:title"]')?.getAttribute("content") ?? "") ||
+        cleanText(document.title) || title;
       const dateValue = document.querySelector('meta[property="article:published_time"], meta[name="date"], meta[itemprop="datePublished"]')?.getAttribute("content") ??
         document.querySelector('time[itemprop="datePublished"]')?.getAttribute("datetime");
       publishedAt = publicationDate(dateValue);
@@ -37,7 +39,7 @@ export function extractText(page: Page, requestedUrl: string, maxChars: number):
       if (article?.textContent?.trim()) {
         const articleDom = new JSDOM(article.content ?? "");
         try {
-          articleDom.window.document.querySelectorAll("p, h1, h2, h3, h4, li, blockquote, pre, br").forEach((element) => element.append("\n\n"));
+          articleDom.window.document.querySelectorAll(blockSelector).forEach((element) => element.append("\n\n"));
           text = articleDom.window.document.body.textContent ?? article.textContent;
         } finally { articleDom.window.close(); }
         title = cleanText(article.title ?? "") || title;
@@ -46,7 +48,7 @@ export function extractText(page: Page, requestedUrl: string, maxChars: number):
       } else {
         document.querySelectorAll("script, style, noscript, nav, header, footer, aside, form, iframe, template, [hidden], [aria-hidden='true']").forEach((element) => element.remove());
         const root = document.querySelector("main, article, [role='main']") ?? document.body;
-        root.querySelectorAll("p, h1, h2, h3, h4, li, blockquote, pre, br").forEach((element) => element.append("\n\n"));
+        root.querySelectorAll(blockSelector).forEach((element) => element.append("\n\n"));
         text = root.textContent ?? "";
         quality = "fallback";
         warnings.push("Article extraction was incomplete; text may include unrelated page content.");

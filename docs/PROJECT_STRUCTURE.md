@@ -21,6 +21,7 @@ research-brief-builder/
 │   │   ├── search-provider.ts       # Replaceable provider interface
 │   │   ├── web-search-adapter.ts    # Brave integration and normalization
 │   │   ├── safe-fetch.ts            # DNS pinning, redirects, deadlines, byte limits
+│   │   ├── extract-pdf.ts           # Worker-isolated, bounded PDF text extraction
 │   │   ├── extract-text.ts          # HTML/plain-text extraction and metadata
 │   │   ├── source-utils.ts          # Identities, domain/date normalization
 │   │   └── errors.ts                # Provider-neutral, secret-safe errors
@@ -44,5 +45,5 @@ Generated files in `.mcp-use/` are excluded from Git. Secrets belong in ignored 
 2. `search_sources` returns bounded records and renders `research-results`.
 3. `fetch_source` checks the URL and DNS, pins the connection, validates redirects, bounds the response, and extracts text. Known synthetic demo sources require no network request.
 4. The view retains successful and failed retrievals separately for its mounted workflow.
-5. The brief handoff includes selected, successfully retrieved evidence and its final URLs. The connected assistant performs synthesis.
+5. The brief handoff includes selected, successfully retrieved evidence excerpts and final URLs within a shared serialized-character budget. The connected assistant performs synthesis.
 6. Regression tests and an MCP smoke check verify tool behavior and resources.

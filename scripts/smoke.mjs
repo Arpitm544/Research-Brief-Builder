@@ -4,7 +4,7 @@ const endpoint = process.env.MCP_ENDPOINT ?? "http://localhost:3000/mcp";
 let nextId = 1;
 let sessionId;
 let protocolVersion = "2026-07-28";
-async function rpc(method, params) {
+async function rpc(method, params, { notification = false } = {}) {
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -13,7 +13,7 @@ async function rpc(method, params) {
       ...(protocolVersion === "2026-07-28" ? { "Mcp-Method": method, ...((params.name ?? params.uri) ? { "Mcp-Name": params.name ?? params.uri } : {}) } : {}),
       ...(sessionId ? { "Mcp-Session-Id": sessionId } : {}),
     },
-    body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params: {
+    body: JSON.stringify({ jsonrpc: "2.0", ...(!notification ? { id: nextId++ } : {}), method, params: {
       ...params,
       ...(protocolVersion === "2026-07-28" ? { _meta: {
         "io.modelcontextprotocol/protocolVersion": protocolVersion,
@@ -25,6 +25,10 @@ async function rpc(method, params) {
   });
   if (!response.ok) throw new Error(`${method}: HTTP ${response.status}: ${await response.text()}`);
   sessionId ??= response.headers.get("Mcp-Session-Id");
+  if (notification) {
+    assert.equal(response.status, 202, `${method} should be accepted without a response body.`);
+    return;
+  }
   const text = await response.text();
   const payload = text.startsWith("event:") || text.startsWith("data:") ?
     JSON.parse(text.split("\n").find((line) => line.startsWith("data:"))?.slice(5) ?? "null") : JSON.parse(text);
@@ -39,7 +43,11 @@ const initialized = await rpc("initialize", {
   protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "research-brief-smoke", version: "0.1.0" },
 });
 assert.equal(initialized.serverInfo.name, "research-brief-builder");
-// Exercise the current sessionless protocol after validating legacy negotiation.
+assert.equal(initialized.protocolVersion, protocolVersion);
+await rpc("notifications/initialized", {}, { notification: true });
+const legacyTools = await rpc("tools/list", {});
+assert.deepEqual(legacyTools.tools.map((tool) => tool.name).sort(), ["fetch_source", "search_sources"]);
+// Exercise the current sessionless protocol after a complete legacy session.
 protocolVersion = "2026-07-28";
 sessionId = undefined;
 const tools = await rpc("tools/list", {});
@@ -62,4 +70,4 @@ for (const resource of resources.resources) {
   const view = await rpc("resources/read", { uri: resource.uri });
   assert.ok(view.contents[0].mimeType.includes("text/html")); assert.match(view.contents[0].text, /<html/);
 }
-console.log("MCP smoke check passed: modern discovery, legacy handshake, tools, 3 demo sources, unsafe-URL rejection, and 2 view resources.");
+console.log("MCP smoke check passed: modern discovery, legacy initialization notification and tool listing, tools, 3 demo sources, unsafe-URL rejection, and 2 view resources.");
