@@ -20,8 +20,15 @@ function excerpts(text: string, question: string, allowance: number) {
   const selected: { start: number; end: number; text: string }[] = [];
   for (const candidate of candidates) {
     if (allowance <= 0) break;
-    const value = candidate.text.slice(0, allowance);
-    selected.push({ start: candidate.start, end: candidate.start + value.length, text: value });
+    const length = Math.min(candidate.text.length, allowance);
+    // Keep a matched term when the serialized budget only permits part of a window.
+    const match = length < candidate.text.length
+      ? [...candidate.text.matchAll(/[\p{L}\p{N}]{3,}/gu)].find((word) => terms.has(word[0].toLowerCase()))
+      : undefined;
+    const offset = match ? Math.min(candidate.text.length - length, Math.max(0, match.index - Math.floor((length - match[0].length) / 2))) : 0;
+    const start = candidate.start + offset;
+    const value = text.slice(start, start + length);
+    selected.push({ start, end: start + value.length, text: value });
     allowance -= value.length;
   }
   return selected.sort((a, b) => a.start - b.start);
@@ -80,7 +87,10 @@ export function prepareBriefEvidence(question: string, selectedResults: FetchOut
 
 /** Stateless handoff: only successfully retrieved evidence can enter the brief. */
 export function buildBriefPrompt(question: string, selectedResults: FetchOutput[]): string {
-  const evidence = prepareBriefEvidence(question, selectedResults);
+  return buildBriefPromptFromEvidence(prepareBriefEvidence(question, selectedResults));
+}
+
+export function buildBriefPromptFromEvidence(evidence: ReturnType<typeof prepareBriefEvidence>): string {
   if (!evidence.sources.length) throw new Error("Read at least one selected source before drafting a brief.");
   return [
     "Draft a concise research brief (about 300-500 words) for the question in the JSON below.",

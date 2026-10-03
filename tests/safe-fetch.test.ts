@@ -99,6 +99,9 @@ test("address fallback remains bounded by the total retrieval deadline", async (
 test("sniffs HTML BOMs and meta declarations before decoding source titles and evidence", async () => {
   const html = (meta: string) => `<html><head>${meta}<title>Café research</title></head><body><main>Evidence: déjà vu.</main></body></html>`;
   const cases: [Buffer, string][] = [
+    [Buffer.from(html("")), "text/html"],
+    [Buffer.from(html("")), "application/xhtml+xml"],
+    [Buffer.from(html(""), "latin1"), "text/html; charset=windows-1252"],
     [Buffer.from(html('<meta charset="windows-1252">'), "latin1"), "text/html"],
     [Buffer.from(html('<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">'), "latin1"), "text/html"],
     [Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(html(""), "utf16le")]), "text/html; charset=utf-8"],

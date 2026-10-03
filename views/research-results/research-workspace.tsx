@@ -1,7 +1,7 @@
 import { ModelContext, useHostContext, useOpenExternal, useSendFollowUp, useViewState } from "mcp-use/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { SearchOutput } from "../../src/schemas/research.js";
-import { buildBriefPrompt, prepareBriefEvidence } from "../shared/brief-context.js";
+import { buildBriefPromptFromEvidence, prepareBriefEvidence } from "../shared/brief-context.js";
 import { Warnings } from "../shared/components.js";
 import { useSourceRetrieval } from "./use-source-retrieval.js";
 import { SourceCard } from "./source-card.js";
@@ -16,10 +16,10 @@ export function ResearchWorkspace({ result, searchPending }: { result: SearchOut
   const [message, setMessage] = useState<string>();
   const [messageError, setMessageError] = useState<string>();
   const [sending, setSending] = useState(false);
-  const selected = result.sources.filter((source) => state.selectedUrls.includes(source.url));
-  const ready = selected.flatMap((source) => evidence[source.url]?.status === "success" ? [evidence[source.url]!] : []);
-  const briefEvidence = prepareBriefEvidence(result.query, ready);
-  const prompt = ready.length ? buildBriefPrompt(result.query, ready) : "";
+  const selected = useMemo(() => result.sources.filter((source) => state.selectedUrls.includes(source.url)), [result.sources, state.selectedUrls]);
+  const ready = useMemo(() => selected.flatMap((source) => evidence[source.url]?.status === "success" ? [evidence[source.url]!] : []), [selected, evidence]);
+  const briefEvidence = useMemo(() => prepareBriefEvidence(result.query, ready), [result.query, ready]);
+  const prompt = useMemo(() => briefEvidence.sources.length ? buildBriefPromptFromEvidence(briefEvidence) : "", [briefEvidence]);
   const canFollowUp = hostCapabilities?.message !== undefined;
   const busy = batchReading || searchPending || sending;
 

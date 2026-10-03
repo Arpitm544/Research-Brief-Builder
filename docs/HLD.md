@@ -4,7 +4,7 @@
 
 **Last updated:** 2026-10-04
 
-**Implementation update (2026-10-04):** The two MCP tools and React views are implemented using mcp-use 2.7.3. Live search uses Brave behind the provider interface. An explicitly synthetic offline demo is the default. Retrieval supports HTML and plain text, with DNS-pinned connections, redirect checks, and response/deadline limits. Brief drafting remains the host assistant's responsibility; the view supplies selected retrieved evidence and provenance instructions, not automated claim verification.
+**Implementation update (2026-10-04):** The two MCP tools and React views are implemented using mcp-use 2.7.3. Live search uses Brave behind the provider interface. An explicitly synthetic offline demo is the default. Retrieval supports HTML and plain text, with DNS-pinned connections, redirect checks, and response/deadline limits. It also supports bounded PDF text extraction, limits both encoded and decoded response bytes, and shares a 32,000-character serialized evidence budget across selected sources. Brief drafting remains the host assistant's responsibility; the view supplies selected retrieved evidence and provenance instructions, not automated claim verification.
 
 ## 1. Purpose
 

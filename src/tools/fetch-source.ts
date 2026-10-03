@@ -3,7 +3,7 @@ import { demoPage, demoWarning } from "../demo/fixtures.js";
 import { fetchInputSchema, type FetchInput, type FetchOutput } from "../schemas/research.js";
 import { extractPdf } from "../services/extract-pdf.js";
 import { extractText } from "../services/extract-text.js";
-import { publicError } from "../services/errors.js";
+import { publicError, ResearchFailure } from "../services/errors.js";
 import { safeFetch, validatePublicUrl, type Page } from "../services/safe-fetch.js";
 
 export function createFetchHandler(
@@ -16,13 +16,16 @@ export function createFetchHandler(
       warnings: [], isDemo: false, trust: "untrusted",
     };
     try {
+      const deadline = performance.now() + config.FETCH_TIMEOUT_MS;
       const input = fetchInputSchema.parse(rawInput);
       const url = validatePublicUrl(input.url).href;
       base.requestedUrl = url;
       const fixture = config.SEARCH_PROVIDER === "demo" ? demoPage(url) : undefined;
       const page = fixture ?? await fetchPage(url, signal);
+      const remainingMs = Math.floor(deadline - performance.now());
+      if (remainingMs <= 0) throw new ResearchFailure("FETCH_TIMEOUT", "Source retrieval exceeded its deadline.", true);
       const result = page.contentType === "application/pdf"
-        ? await extractPdf(page, url, config.MAX_SOURCE_CHARS, config.FETCH_TIMEOUT_MS, signal)
+        ? await extractPdf(page, url, config.MAX_SOURCE_CHARS, remainingMs, signal)
         : extractText(page, url, config.MAX_SOURCE_CHARS);
       if (fixture) {
         result.source.title = result.source.text.split("\n")[0] ?? result.source.title;

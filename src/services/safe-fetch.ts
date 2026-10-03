@@ -206,6 +206,7 @@ export async function safeFetch(
         const charset = contentType === "text/plain" ? headerCharset ?? "utf-8" : sniffHTMLEncoding(buffer, {
           transportLayerEncodingLabel: headerCharset,
           xml: contentType === "application/xhtml+xml",
+          defaultEncoding: "utf-8",
         });
         let body: string;
         try { body = new TextDecoder(charset).decode(buffer); } catch {

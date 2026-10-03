@@ -50,8 +50,10 @@ test("domain filters enforce DNS label lengths and match fully qualified hostnam
 test("publication timestamps can cross UTC midnight while invalid calendar dates remain rejected", () => {
   assert.equal(publicationDate("2026-10-04T00:30:00+05:30"), "2026-10-03T19:00:00.000Z");
   assert.equal(publicationDate("2026-10-04T23:30:00-07:00"), "2026-10-05T06:30:00.000Z");
+  assert.equal(publicationDate("2026-10-04T12:00:00Z"), "2026-10-04T12:00:00.000Z");
+  assert.equal(publicationDate("2026-10-04T12:00:00+0530"), "2026-10-04T06:30:00.000Z");
   assert.equal(publicationDate("2024-02-29"), "2024-02-29");
-  for (const value of ["2026-02-29", "2026-02-30T00:30:00+05:30", "2026-13-01", "2026-10-04Tbad", "2 days ago"]) {
+  for (const value of ["2026-02-29", "2026-02-30T00:30:00+05:30", "2026-13-01", "2026-10-04Tbad", "2026-10-04T00:30:00", "2026-10-04T12:00", "2 days ago"]) {
     assert.equal(publicationDate(value), undefined, value);
   }
 });

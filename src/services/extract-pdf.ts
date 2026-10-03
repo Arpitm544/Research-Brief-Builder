@@ -5,13 +5,16 @@ import type { Page } from "./safe-fetch.js";
 import { extractText } from "./extract-text.js";
 import { ResearchFailure } from "./errors.js";
 
+const MAX_ACTIVE_PDF_EXTRACTIONS = 2;
+let activePdfExtractions = 0;
+
 // A separate worker makes the deadline enforceable even during CPU-heavy parsing.
 const workerCode = `
 const { parentPort, workerData } = require('node:worker_threads');
 (async () => {
   const { getDocument } = await import(workerData.library);
   const task = getDocument({ data: new Uint8Array(workerData.data), isEvalSupported: false,
-    disableFontFace: true, useSystemFonts: false, useWorkerFetch: false, stopAtErrors: true, verbosity: 0 });
+    disableFontFace: true, useSystemFonts: false, useWorkerFetch: false, stopAtErrors: false, verbosity: 0 });
   try {
     const doc = await task.promise;
     let text = '', pagesRead = 0, truncated = false;
@@ -35,7 +38,7 @@ const { parentPort, workerData } = require('node:worker_threads');
       if (truncated) break;
     }
     parentPort.postMessage({ text: text.slice(0, workerData.maxChars), pagesRead,
-      totalPages: doc.numPages, truncated: truncated || pagesRead < doc.numPages });
+      totalPages: doc.numPages, truncated: truncated || text.length > workerData.maxChars || pagesRead < doc.numPages });
   } finally { await task.destroy(); }
 })().catch(() => parentPort.postMessage({ error: true }));
 `;
@@ -45,8 +48,12 @@ export async function extractPdf(page: Page, requestedUrl: string, maxChars: num
   const signal = parentSignal ? AbortSignal.any([parentSignal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs);
   if (signal.aborted) throw new ResearchFailure("FETCH_FAILED", "PDF extraction was cancelled.", true);
   const library = pathToFileURL(createRequire(import.meta.url).resolve("pdfjs-dist/legacy/build/pdf.mjs")).href;
+  if (activePdfExtractions >= MAX_ACTIVE_PDF_EXTRACTIONS) {
+    throw new ResearchFailure("FETCH_FAILED", "PDF extraction is busy. Retry after another source finishes.", true);
+  }
   const worker = new Worker(workerCode, { eval: true, workerData: { library, data: page.pdfData, maxChars, maxPages },
     resourceLimits: { maxOldGenerationSizeMb: 96, maxYoungGenerationSizeMb: 16 } });
+  activePdfExtractions++;
   try {
     const result = await new Promise<{ text: string; pagesRead: number; totalPages: number; truncated: boolean }>((resolve, reject) => {
       const onAbort = () => reject(new ResearchFailure(parentSignal?.aborted ? "FETCH_FAILED" : "FETCH_TIMEOUT", "PDF extraction was cancelled or exceeded its deadline.", true));
@@ -65,5 +72,8 @@ export async function extractPdf(page: Page, requestedUrl: string, maxChars: num
     extracted.warnings.push("PDF text order may differ from its visual layout; tables and figures may be incomplete.");
     if (result.truncated) extracted.warnings.push(`PDF extraction is partial: read ${result.pagesRead} of ${result.totalPages} pages, capped at ${maxPages} pages and ${maxChars} characters.`);
     return extracted;
-  } finally { await worker.terminate(); }
+  } finally {
+    try { await worker.terminate(); }
+    finally { activePdfExtractions--; }
+  }
 }
