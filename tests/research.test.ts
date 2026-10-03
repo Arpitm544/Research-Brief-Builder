@@ -108,6 +108,13 @@ test("article extraction keeps provenance, date and paragraphs while excluding s
   assert.ok(!source.text.includes("shouldNeverRun")); assert.ok(!source.text.includes("Unrelated navigation"));
 });
 
+test("a blank Open Graph title falls back to the document title", () => {
+  const page = htmlPage('<html><head><title>Document title</title><meta property="og:title" content="   "></head><body><main style="display:none">A small fragment.</main></body></html>');
+  const { source } = extractText(page, page.url, 1000);
+  assert.equal(source.title, "Document title");
+  assert.equal(source.extractionQuality, "fallback");
+});
+
 test("fallback and truncation warnings describe partial text, and empty pages fail clearly", () => {
   const tiny = extractText(htmlPage("<main>A small fragment.</main>"), "https://public.org/original", 1000);
   assert.ok(tiny.warnings.some((warning) => warning.includes("Very little")));

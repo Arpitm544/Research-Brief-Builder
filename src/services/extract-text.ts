@@ -24,8 +24,8 @@ export function extractText(page: Page, requestedUrl: string, maxChars: number):
     const dom = new JSDOM(page.body, { url: page.url });
     try {
       const document = dom.window.document;
-      title = cleanText(document.querySelector('meta[property="og:title"]')?.getAttribute("content") ??
-        document.title ?? "") || title;
+      title = cleanText(document.querySelector('meta[property="og:title"]')?.getAttribute("content") ?? "") ||
+        cleanText(document.title) || title;
       const dateValue = document.querySelector('meta[property="article:published_time"], meta[name="date"], meta[itemprop="datePublished"]')?.getAttribute("content") ??
         document.querySelector('time[itemprop="datePublished"]')?.getAttribute("datetime");
       publishedAt = publicationDate(dateValue);
