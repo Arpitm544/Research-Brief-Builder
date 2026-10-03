@@ -144,10 +144,11 @@ test("Browserbase rejects malformed and oversized responses and represents no re
 });
 
 test("Browserbase shortens long questions with a warning", async () => {
-  const query = "research ".repeat(30);
+  const query = `${"a".repeat(199)}😀tail`;
   const provider = new BrowserbaseSearchProvider("secret", 1000, async (_url, init) => {
     const body = JSON.parse(String(init?.body));
-    assert.equal(body.query.length, 200);
+    assert.equal(body.query, `${"a".repeat(199)}😀`);
+    assert.equal(Array.from(body.query).length, 200);
     assert.equal(body.numResults, 5);
     return jsonResponse({ results: [] });
   });

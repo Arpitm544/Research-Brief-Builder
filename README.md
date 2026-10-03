@@ -42,7 +42,7 @@ SEARCH_PROVIDER=browserbase
 BROWSERBASE_API_KEY=your_browserbase_key
 ```
 
-Restart the server after changing `.env`. Browserbase's free plan currently includes 1,000 Search calls per month; check its [pricing](https://www.browserbase.com/pricing) for current limits. This app uses the [Search API](https://docs.browserbase.com/platform/search/overview) only for discovery and fetches selected public pages itself. The Google/Chrome API key is not a Browserbase key. Keys never appear in tool output.
+Restart the server after changing `.env`. Browserbase's free plan currently includes 1,000 Search calls per month; check its [pricing](https://www.browserbase.com/pricing) for current limits. This app uses the [Search API](https://docs.browserbase.com/platform/search/overview) only for discovery and fetches selected public pages itself. Keys never appear in tool output.
 
 Live questions are sent to Browserbase, and selected pages are requested from public websites. This server does not persist questions, source text, or research history. The connected host and provider may have their own retention policies. Browserbase Search accepts at most 200 characters per query; longer questions are shortened with a warning. Domain filters are enforced on returned results, so restrictive filters may yield fewer sources.
 

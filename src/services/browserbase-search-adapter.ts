@@ -30,7 +30,7 @@ export class BrowserbaseSearchProvider implements SearchProvider {
     if (!this.apiKey) throw new ResearchFailure("PROVIDER_NOT_CONFIGURED", "Live search requires BROWSERBASE_API_KEY. Add a key to .env or choose SEARCH_PROVIDER=demo.");
     const timeout = AbortSignal.timeout(this.timeoutMs);
     const signal = parentSignal ? AbortSignal.any([timeout, parentSignal]) : timeout;
-    const query = input.query.slice(0, 200);
+    const query = Array.from(input.query).slice(0, 200).join("");
     // Ask for extra candidates when filtering locally so domain restrictions remain strict.
     const numResults = input.domains?.length ? 25 : input.maxResults;
     try {
@@ -75,7 +75,7 @@ export class BrowserbaseSearchProvider implements SearchProvider {
           sources.push({
             sourceId: sourceId(sourceUrl.href), title: plainText(result.title).slice(0, 300) || sourceUrl.hostname,
             url: sourceUrl.href, domain: sourceUrl.hostname,
-            publishedAt: publicationDate(result.publishedDate), snippet: plainText(result.description ?? "").slice(0, 1000),
+            publishedAt: publicationDate(result.publishedDate), snippet: plainText(result.description ?? result.title).slice(0, 1000),
           });
           if (sources.length >= input.maxResults) break;
         }
