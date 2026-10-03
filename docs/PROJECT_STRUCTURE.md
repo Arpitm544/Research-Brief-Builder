@@ -19,7 +19,7 @@ research-brief-builder/
 │   │   └── fetch-source.ts          # Stateless retrieval handler
 │   ├── services/
 │   │   ├── search-provider.ts       # Replaceable provider interface
-│   │   ├── web-search-adapter.ts    # Brave integration and normalization
+│   │   ├── browserbase-search-adapter.ts # Browserbase integration and normalization
 │   │   ├── safe-fetch.ts            # DNS pinning, redirects, deadlines, byte limits
 │   │   ├── extract-pdf.ts           # Worker-isolated, bounded PDF text extraction
 │   │   ├── extract-text.ts          # HTML/plain-text extraction and metadata

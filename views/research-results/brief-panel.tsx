@@ -11,6 +11,6 @@ export function BriefPanel({ selectedCount, readyCount, busy, batchReading, canF
       {readyCount > 0 && <p className="small-note" role="status">Evidence: {usedChars.toLocaleString("en-US")} / {budgetChars.toLocaleString("en-US")} characters. {excerpted ? "Query-matched excerpts are included; full text remains on source cards." : "All retrieved text fits in the shared budget."}</p>}
       {prompt && <details className="copy-request"><summary>Copy brief request</summary><textarea aria-label="Brief request with retrieved evidence" readOnly value={prompt} rows={6} /></details>}
       {message && <p className="success-message" role="status">{message}</p>}{messageError && <p className="error-message" role="alert">{messageError}</p>}
-      <div className="privacy-note"><span aria-hidden="true">◇</span><p>{isDemo ? "This demo uses invented sources. Switch to live search to research your own question." : "Queries are sent to Brave Search. Source text comes from public websites. This app stores no research history."}</p></div>
+      <div className="privacy-note"><span aria-hidden="true">◇</span><p>{isDemo ? "This demo uses invented sources. Switch to live search to research your own question." : "Queries are sent to Browserbase Search. Source text comes from public websites. This app stores no research history."}</p></div>
     </aside>;
 }
