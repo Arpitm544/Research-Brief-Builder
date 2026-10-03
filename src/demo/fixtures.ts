@@ -9,7 +9,7 @@ const fixtures = [
   {
     path: "cold-climate-performance", title: "Cold-weather performance and efficiency",
     snippet: "An illustrative look at how outdoor temperature, equipment selection, and backup heating affect a home.",
-    text: "SYNTHETIC DEMO SOURCE — NOT PUBLIC EVIDENCE.\n\nIn this invented example, a homeowner is comparing a cold-climate heat pump with their existing heating system. The example assumes the unit can continue operating in cold conditions, while its efficiency and available heating output vary with outdoor temperature.\n\nThe fictional homeowner checks the equipment's rated heating capacity at their local design temperature. They also asks an installer about sizing, insulation, and the hours during which backup heating might run.\n\nThis example illustrates why a research brief should distinguish equipment performance from whole-home results. It supplies no measured performance data and cannot establish the efficiency of any actual product.",
+    text: "SYNTHETIC DEMO SOURCE — NOT PUBLIC EVIDENCE.\n\nIn this invented example, a homeowner is comparing a cold-climate heat pump with their existing heating system. The example assumes the unit can continue operating in cold conditions, while its efficiency and available heating output vary with outdoor temperature.\n\nThe fictional homeowner checks the equipment's rated heating capacity at their local design temperature. They also ask an installer about sizing, insulation, and the hours during which backup heating might run.\n\nThis example illustrates why a research brief should distinguish equipment performance from whole-home results. It supplies no measured performance data and cannot establish the efficiency of any actual product.",
   },
   {
     path: "installation-costs", title: "Installation costs and household savings",
@@ -31,7 +31,7 @@ export const demoSources = fixtures.map((fixture) => {
 export class DemoSearchProvider implements SearchProvider {
   readonly name = "demo" as const;
   async search(input: Parameters<SearchProvider["search"]>[0]) {
-    const matchesScenario = /heat\s*pumps?|cold\s*climates?/i.test(input.query);
+    const matchesScenario = /heat[\s-]*pumps?|cold[\s-]*climates?/i.test(input.query);
     const sources = matchesScenario ? demoSources.filter((source) => domainMatches(source.domain, input.domains)).slice(0, input.maxResults) : [];
     return {
       sources,

@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "An MCP app for inspectable public-source research and cited briefs",
-  "engines": { "node": ">=22.22.2" },
+  "engines": {
+    "node": ">=22.22.2"
+  },
   "scripts": {
     "dev": "mcp-use dev",
     "build": "mcp-use build",
@@ -16,9 +18,11 @@
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
+    "html-encoding-sniffer": "^6.0.0",
     "ipaddr.js": "^2.2.0",
     "jsdom": "^27.0.0",
     "mcp-use": "2.7.3",
+    "pdfjs-dist": "^6.4.299",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.4.3"

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { Readability } from "@mozilla/readability";
 import { readConfig } from "../src/config/env.js";
 import { DemoSearchProvider, demoQuestion, demoSources } from "../src/demo/fixtures.js";
 import { fetchOutputSchema, searchInputSchema, searchOutputSchema } from "../src/schemas/research.js";
@@ -8,6 +9,7 @@ import { extractText } from "../src/services/extract-text.js";
 import { BraveSearchProvider } from "../src/services/web-search-adapter.js";
 import { createFetchHandler } from "../src/tools/fetch-source.js";
 import { createSearchHandler } from "../src/tools/search-sources.js";
+import { domainMatches, publicationDate } from "../src/services/source-utils.js";
 
 const config = readConfig({});
 const htmlPage = (body: string) => ({ url: "https://public.org/article", body, contentType: "text/html", retrievedAt: "2026-10-04T00:00:00.000Z" });
@@ -21,6 +23,38 @@ test("configuration and tool inputs enforce bounded values without exposing secr
   assert.equal(searchInputSchema.safeParse({ query: "ok" }).success, false);
   for (const domains of [["https://public.org"], ["a.org/path"], ["a.org:443"], ["a.org", "b.org", "c.org", "d.org", "e.org", "f.org"]]) {
     assert.equal(searchInputSchema.safeParse({ query: "question", domains }).success, false);
+  }
+});
+
+test("Brave requires a nonblank API key at startup while demo configuration can omit it", () => {
+  for (const key of [undefined, "", "   "]) {
+    assert.equal(readConfig({ SEARCH_PROVIDER: "demo", BRAVE_SEARCH_API_KEY: key }).SEARCH_PROVIDER, "demo");
+    assert.throws(() => readConfig({ SEARCH_PROVIDER: "brave", BRAVE_SEARCH_API_KEY: key }), /^Error: Invalid configuration: BRAVE_SEARCH_API_KEY$/);
+  }
+  assert.equal(readConfig({ SEARCH_PROVIDER: "brave", BRAVE_SEARCH_API_KEY: "  test-secret  " }).BRAVE_SEARCH_API_KEY, "test-secret");
+});
+
+test("domain filters enforce DNS label lengths and match fully qualified hostnames", () => {
+  for (const domain of ["a.org", `${"a".repeat(63)}.org`, `${"a".repeat(63)}.sub.org`]) {
+    assert.equal(searchInputSchema.safeParse({ query: "question", domains: [domain] }).success, true, domain);
+  }
+  for (const domain of [`${"a".repeat(64)}.org`, `sub.${"a".repeat(64)}.org`, "-bad.org", "bad-.org"]) {
+    assert.equal(searchInputSchema.safeParse({ query: "question", domains: [domain] }).success, false, domain);
+  }
+  for (const hostname of ["public.org.", "docs.public.org.", "PUBLIC.ORG."]) assert.equal(domainMatches(hostname, ["public.org"]), true);
+  assert.equal(domainMatches("public.org", ["PUBLIC.ORG."]), true);
+  assert.equal(domainMatches("notpublic.org.", ["public.org"]), false);
+  assert.equal(domainMatches("public.org.evil.org.", ["public.org"]), false);
+});
+
+test("publication timestamps can cross UTC midnight while invalid calendar dates remain rejected", () => {
+  assert.equal(publicationDate("2026-10-04T00:30:00+05:30"), "2026-10-03T19:00:00.000Z");
+  assert.equal(publicationDate("2026-10-04T23:30:00-07:00"), "2026-10-05T06:30:00.000Z");
+  assert.equal(publicationDate("2026-10-04T12:00:00Z"), "2026-10-04T12:00:00.000Z");
+  assert.equal(publicationDate("2026-10-04T12:00:00+0530"), "2026-10-04T06:30:00.000Z");
+  assert.equal(publicationDate("2024-02-29"), "2024-02-29");
+  for (const value of ["2026-02-29", "2026-02-30T00:30:00+05:30", "2026-13-01", "2026-10-04Tbad", "2026-10-04T00:30:00", "2026-10-04T12:00", "2 days ago"]) {
+    assert.equal(publicationDate(value), undefined, value);
   }
 });
 
@@ -46,6 +80,13 @@ test("demo search represents unrelated questions and domain filters as empty res
   const search = createSearchHandler(config, new DemoSearchProvider());
   assert.equal((await search({ query: "Quantum mechanics experiments" })).structuredContent.sources.length, 0);
   assert.equal((await search({ query: demoQuestion, domains: ["energy.gov"] })).structuredContent.sources.length, 0);
+});
+
+test("demo search recognizes hyphenated heat-pump and cold-climate questions", async () => {
+  const search = createSearchHandler(config, new DemoSearchProvider());
+  for (const query of ["heat-pump installation", "Heat-pumps in winter", "cold-climate heating"]) {
+    assert.equal((await search({ query })).structuredContent.sources.length, 3, query);
+  }
 });
 
 test("the search handler enforces the server ceiling and reports it", async () => {
@@ -123,6 +164,43 @@ test("fallback and truncation warnings describe partial text, and empty pages fa
   assert.equal(long.source.text.length, 1000); assert.equal(long.source.truncated, true);
   assert.ok(long.warnings.some((warning) => warning.includes("truncated")));
   assert.throws(() => extractText(htmlPage("<script>doSomething()</script>"), "https://public.org/article", 1000), /no readable text/);
+});
+
+test("blank Open Graph titles fall back to the document title", () => {
+  const page = htmlPage('<html><head><title>Document research title</title><meta property="og:title" content="   "></head><body><main>Readable evidence.</main></body></html>');
+  assert.equal(extractText(page, page.url, 20000).source.title, "Document research title");
+});
+
+test("article extraction separates adjacent block containers without breaking inline text", () => {
+  const page = htmlPage("<main><div>First<span>Word</span></div><section>Second sentence.</section><div>Third sentence.</div></main>");
+  const { source } = extractText(page, page.url, 20000);
+  assert.equal(source.extractionQuality, "article");
+  assert.equal(source.text, "FirstWord\n\nSecond sentence.\n\nThird sentence.");
+});
+
+test("fallback extraction separates adjacent block containers without breaking inline text", (context) => {
+  context.mock.method(Readability.prototype, "parse", () => null);
+  const page = htmlPage("<main><div>First<span>Word</span></div><section>Second sentence.</section><div>Third sentence.</div></main>");
+  const { source } = extractText(page, page.url, 20000);
+  assert.equal(source.extractionQuality, "fallback");
+  assert.equal(source.text, "FirstWord\n\nSecond sentence.\n\nThird sentence.");
+});
+
+test("rejected URLs never echo credentials, and validated URLs are normalized before being returned", async () => {
+  let networkCalls = 0;
+  const retrieve = createFetchHandler(config, async () => { networkCalls++; throw new Error("network failure"); });
+  for (const url of ["https://private-user:private-password@public.org/article", "https://private-user:private-password@public.org/" + "x".repeat(2048), "malformed-private-password"]) {
+    const result = await retrieve({ url });
+    assert.equal(result.isError, true);
+    assert.equal(result.structuredContent.requestedUrl, undefined);
+    assert.equal(fetchOutputSchema.safeParse(result.structuredContent).success, true);
+    assert.ok(!JSON.stringify(result).includes("private-user"));
+    assert.ok(!JSON.stringify(result).includes("private-password"));
+  }
+  assert.equal(networkCalls, 0);
+  const failure = await retrieve({ url: "  https://public.org/article#section  " });
+  assert.equal(failure.structuredContent.requestedUrl, "https://public.org/article");
+  assert.equal(networkCalls, 1);
 });
 
 test("source failures remain separate from successes and only retrieved URLs enter brief context", async () => {
