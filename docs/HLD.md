@@ -1,8 +1,10 @@
 # High-Level Design: Research Brief Builder
 
-**Status:** Initial design for the MVP
+**Status:** MVP implemented; original design retained below. See README for setup and current limits.
 
 **Last updated:** 2026-10-02
+
+**Implementation update (2026-10-04):** The two MCP tools and React views are implemented using mcp-use 2.7.3. Live search uses Brave behind the provider interface. An explicitly synthetic offline demo is the default. Retrieval supports HTML and plain text, with DNS-pinned connections, redirect checks, and response/deadline limits. Brief drafting remains the host assistant's responsibility; the view supplies selected retrieved evidence and provenance instructions, not automated claim verification.
 
 ## 1. Purpose
 

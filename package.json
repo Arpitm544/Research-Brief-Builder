@@ -1,0 +1,34 @@
+{
+  "name": "research-brief-builder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "An MCP app for inspectable public-source research and cited briefs",
+  "engines": { "node": ">=22.22.2" },
+  "scripts": {
+    "dev": "mcp-use dev",
+    "build": "mcp-use build",
+    "start": "mcp-use start",
+    "typecheck": "mcp-use typecheck",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:smoke": "node scripts/smoke.mjs",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "ipaddr.js": "^2.2.0",
+    "jsdom": "^27.0.0",
+    "mcp-use": "2.7.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^27.0.0",
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "tsx": "^4.20.0",
+    "typescript": "^7.0.2"
+  }
+}

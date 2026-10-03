@@ -1,44 +1,48 @@
-# Planned Project Structure
+# Project Structure
 
-This is the intended application layout after scaffolding with the current `mcp-use` MCP Apps template. It is a planning structure; implementation files will be added phase by phase.
+The MVP follows the generated `mcp-use` MCP Apps conventions. Browser runtime helpers live under `views/` so the development pipeline can serve them. Server schemas and services stay under `src/`.
 
 ```text
 research-brief-builder/
-├── index.ts                         # MCP server entry; registers tools and views
-├── package.json                     # Generated scripts and dependencies
-├── tsconfig.json                    # Generated TypeScript configuration
-├── .env.example                     # Names of required configuration values (no secrets)
+├── index.ts                         # Register and export tools with their views
+├── package.json                     # Scripts and pinned framework dependency
+├── package-lock.json                # Reproducible dependency tree
+├── tsconfig.json                    # Server, view, and test type checking
+├── mcp-env.d.ts                     # Generated typed tool registrations
+├── .env.example                     # Configuration names, defaults, and bounds
 ├── src/
 │   ├── schemas/
-│   │   ├── research.ts              # Zod input/output schemas
-│   │   └── source.ts                # Normalized source metadata schema
+│   │   ├── research.ts              # Zod tool input/output schemas
+│   │   └── source.ts                # Source and retrieved-evidence contracts
 │   ├── tools/
-│   │   ├── search-sources.ts        # search_sources MCP tool
-│   │   └── fetch-source.ts          # fetch_source MCP tool
+│   │   ├── search-sources.ts        # Stateless search handler
+│   │   └── fetch-source.ts          # Stateless retrieval handler
 │   ├── services/
-│   │   ├── search-provider.ts       # Provider-neutral interface
-│   │   ├── web-search-adapter.ts    # Chosen provider integration
-│   │   ├── safe-fetch.ts            # URL/network and response limits
-│   │   └── extract-text.ts          # HTML-to-readable-text extraction
-│   └── config/
-│       └── env.ts                   # Environment parsing and validation
+│   │   ├── search-provider.ts       # Replaceable provider interface
+│   │   ├── web-search-adapter.ts    # Brave integration and normalization
+│   │   ├── safe-fetch.ts            # DNS pinning, redirects, deadlines, byte limits
+│   │   ├── extract-text.ts          # HTML/plain-text extraction and metadata
+│   │   ├── source-utils.ts          # Identities, domain/date normalization
+│   │   └── errors.ts                # Provider-neutral, secret-safe errors
+│   ├── config/env.ts                # Bounded environment parsing
+│   └── demo/fixtures.ts             # Synthetic offline scenario
 ├── views/
-│   └── research-results/
-│       └── view.tsx                 # Search result/source inspection UI
-├── public/                          # Static assets, if needed
-└── docs/
-    ├── HLD.md
-    ├── flowchart.md
-    └── PROJECT_STRUCTURE.md
+│   ├── research-results/view.tsx    # Search, selection, inspection, brief handoff
+│   ├── source-reader/view.tsx       # Standalone fetch_source view
+│   └── shared/                      # Components, CSS, and brief handoff helper
+├── public/icon.svg                  # Server identity
+├── scripts/smoke.mjs                # End-to-end MCP smoke check
+├── tests/                           # Retrieval, provider, and workflow regressions
+└── docs/                            # Design and implementation documentation
 ```
 
-The official scaffold may use a slightly different layout. Keep its generated server entry, scripts, and view conventions; adapt the `src/` organization around them rather than replacing the scaffold blindly.
+Generated files in `.mcp-use/` are excluded from Git. Secrets belong in ignored `.env` files.
 
-## Build order
+## Workflow
 
-1. Scaffold the MCP Apps template and run its Inspector.
-2. Add schemas and `search_sources` with mock results.
-3. Render structured results in the React view.
-4. Add the search-provider adapter.
-5. Add safe page fetching and text extraction.
-6. Exercise the end-to-end workflow and refine error states.
+1. `index.ts` constructs the configured provider and stateless handlers.
+2. `search_sources` returns bounded records and renders `research-results`.
+3. `fetch_source` checks the URL and DNS, pins the connection, validates redirects, bounds the response, and extracts text. Known synthetic demo sources require no network request.
+4. The view retains successful and failed retrievals separately for its mounted workflow.
+5. The brief handoff includes selected, successfully retrieved evidence and its final URLs. The connected assistant performs synthesis.
+6. Regression tests and an MCP smoke check verify tool behavior and resources.
