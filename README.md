@@ -13,7 +13,15 @@ npm ci
 npm run dev
 ```
 
-Open the [Inspector](http://localhost:3000/mcp/inspector). The MCP endpoint is `http://localhost:3000/mcp`.
+Run these commands from the project directory. The development server prints the Inspector and MCP endpoint URLs when it starts. By default, the Inspector is at [http://localhost:3000/mcp/inspector](http://localhost:3000/mcp/inspector), and the MCP endpoint is `http://localhost:3000/mcp`.
+
+If port 3000 is already in use, the server automatically tries the next available port (for example, 3001). Use the URLs printed in the terminal. To choose a port yourself, pass `--port`:
+
+```bash
+npm run dev -- --port 3001
+```
+
+Then open `http://localhost:3001/mcp/inspector`. The MCP endpoint is `http://localhost:3001/mcp`.
 
 The app defaults to an **offline demo** with three clearly labeled synthetic sources. Invoke `search_sources` with:
 
