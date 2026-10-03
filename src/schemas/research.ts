@@ -21,7 +21,7 @@ export const searchOutputSchema = z.object({
   query: z.string(),
   sources: z.array(sourceSchema),
   warnings: z.array(z.string()),
-  provider: z.enum(["demo", "brave"]),
+  provider: z.enum(["demo", "browserbase"]),
   isDemo: z.boolean(),
   retrievedAt: z.iso.datetime(),
   trust: z.literal("untrusted"),

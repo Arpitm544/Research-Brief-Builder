@@ -51,7 +51,7 @@ export function ResearchWorkspace({ result, searchPending }: { result: SearchOut
   }
 
   return <>
-    <div className="results-heading"><div><span className="eyebrow">02 / Inspect the evidence</span><h2>{result.sources.length} source{result.sources.length === 1 ? "" : "s"} to explore</h2></div><span className={`provider-badge ${result.isDemo ? "demo" : ""}`}>{result.isDemo ? "Synthetic demo" : "Brave Search"}</span></div>
+    <div className="results-heading"><div><span className="eyebrow">02 / Inspect the evidence</span><h2>{result.sources.length} source{result.sources.length === 1 ? "" : "s"} to explore</h2></div><span className={`provider-badge ${result.isDemo ? "demo" : ""}`}>{result.isDemo ? "Synthetic demo" : "Browserbase Search"}</span></div>
     <Warnings warnings={result.warnings} />
     {result.status === "error" && <div className="error-message" role="alert">{result.error?.message}</div>}
     <div className="research-layout"><section className="source-list" aria-label="Search results">

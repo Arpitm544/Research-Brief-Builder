@@ -6,7 +6,7 @@ import { DemoSearchProvider, demoQuestion, demoSources } from "../src/demo/fixtu
 import { fetchOutputSchema, searchInputSchema, searchOutputSchema } from "../src/schemas/research.js";
 import { buildBriefPrompt } from "../views/shared/brief-context.js";
 import { extractText } from "../src/services/extract-text.js";
-import { BraveSearchProvider } from "../src/services/web-search-adapter.js";
+import { BrowserbaseSearchProvider } from "../src/services/browserbase-search-adapter.js";
 import { createFetchHandler } from "../src/tools/fetch-source.js";
 import { createSearchHandler } from "../src/tools/search-sources.js";
 import { domainMatches, publicationDate } from "../src/services/source-utils.js";
@@ -26,12 +26,12 @@ test("configuration and tool inputs enforce bounded values without exposing secr
   }
 });
 
-test("Brave requires a nonblank API key at startup while demo configuration can omit it", () => {
+test("Browserbase requires a nonblank API key at startup while demo configuration can omit it", () => {
   for (const key of [undefined, "", "   "]) {
-    assert.equal(readConfig({ SEARCH_PROVIDER: "demo", BRAVE_SEARCH_API_KEY: key }).SEARCH_PROVIDER, "demo");
-    assert.throws(() => readConfig({ SEARCH_PROVIDER: "brave", BRAVE_SEARCH_API_KEY: key }), /^Error: Invalid configuration: BRAVE_SEARCH_API_KEY$/);
+    assert.equal(readConfig({ SEARCH_PROVIDER: "demo", BROWSERBASE_API_KEY: key }).SEARCH_PROVIDER, "demo");
+    assert.throws(() => readConfig({ SEARCH_PROVIDER: "browserbase", BROWSERBASE_API_KEY: key }), /^Error: Invalid configuration: BROWSERBASE_API_KEY$/);
   }
-  assert.equal(readConfig({ SEARCH_PROVIDER: "brave", BRAVE_SEARCH_API_KEY: "  test-secret  " }).BRAVE_SEARCH_API_KEY, "test-secret");
+  assert.equal(readConfig({ SEARCH_PROVIDER: "browserbase", BROWSERBASE_API_KEY: "  test-secret  " }).BROWSERBASE_API_KEY, "test-secret");
 });
 
 test("domain filters enforce DNS label lengths and match fully qualified hostnames", () => {
@@ -95,22 +95,23 @@ test("the search handler enforces the server ceiling and reports it", async () =
   assert.equal(output.sources.length, 1); assert.ok(output.warnings.some((warning) => warning.includes("server maximum of 1")));
 });
 
-test("Brave adapter normalizes HTML, deduplicates URLs, filters domains and unsafe results", async () => {
+test("Browserbase adapter normalizes HTML, deduplicates URLs, filters domains and unsafe results", async () => {
   const request: typeof fetch = async (url, init) => {
     const target = new URL(String(url));
-    assert.equal(target.origin, "https://api.search.brave.com");
-    assert.match(target.searchParams.get("q")!, /site:public.org/);
+    assert.equal(target.href, "https://api.browserbase.com/v1/search");
+    assert.equal(init?.method, "POST");
+    assert.deepEqual(JSON.parse(String(init?.body)), { query: "a question", numResults: 25 });
     assert.equal(init?.redirect, "error");
-    assert.equal(new Headers(init?.headers).get("X-Subscription-Token"), "test-secret");
-    return jsonResponse({ web: { results: [
+    assert.equal(new Headers(init?.headers).get("x-bb-api-key"), "test-secret");
+    return jsonResponse({ results: [
       { title: "Bad", url: "http://127.0.0.1", description: "secret" },
       { title: "Different domain", url: "https://outside.org", description: "skip" },
-      { title: "<b>Public &amp; useful</b>", url: "https://public.org/a#section", description: "A <strong>clear</strong> snippet.", page_age: "2026-09-30" },
+      { title: "<b>Public &amp; useful</b>", url: "https://public.org/a#section", description: "A <strong>clear</strong> snippet.", publishedDate: "2026-09-30" },
       { title: "Duplicate", url: "https://public.org/a" },
-      { title: "Subdomain", url: "https://docs.public.org/b", page_age: "2 days ago" },
-    ] } });
+      { title: "Subdomain", url: "https://docs.public.org/b", publishedDate: "2 days ago" },
+    ] });
   };
-  const output = await new BraveSearchProvider("test-secret", 1000, request).search({ query: "a question", domains: ["public.org"], maxResults: 5 });
+  const output = await new BrowserbaseSearchProvider("test-secret", 1000, request).search({ query: "a question", domains: ["public.org"], maxResults: 5 });
   assert.equal(output.sources.length, 2);
   assert.equal(output.sources[0]?.title, "Public & useful");
   assert.equal(output.sources[0]?.snippet, "A clear snippet.");
@@ -121,23 +122,37 @@ test("Brave adapter normalizes HTML, deduplicates URLs, filters domains and unsa
 });
 
 test("live search configuration and rate-limit errors are structured and do not expose provider errors", async () => {
-  const unconfigured = createSearchHandler(config, new BraveSearchProvider(undefined, 1000));
+  const unconfigured = createSearchHandler(config, new BrowserbaseSearchProvider(undefined, 1000));
   const noKey = await unconfigured({ query: "a question" });
   assert.equal(noKey.isError, true); assert.equal(noKey.structuredContent.error?.code, "PROVIDER_NOT_CONFIGURED");
-  const limited = createSearchHandler(config, new BraveSearchProvider("secret", 1000, async () => jsonResponse({ key: "secret" }, 429)));
+  const limited = createSearchHandler(config, new BrowserbaseSearchProvider("secret", 1000, async () => jsonResponse({ key: "secret" }, 429)));
   assert.equal((await limited({ query: "a question" })).structuredContent.error?.code, "SEARCH_RATE_LIMITED");
-  const broken = createSearchHandler(config, new BraveSearchProvider("secret", 1000, async () => { throw new Error("subscription=secret"); }));
+  const forbidden = createSearchHandler(config, new BrowserbaseSearchProvider("secret", 1000, async () => jsonResponse({}, 403)));
+  assert.equal((await forbidden({ query: "a question" })).structuredContent.error?.code, "PROVIDER_NOT_CONFIGURED");
+  const broken = createSearchHandler(config, new BrowserbaseSearchProvider("secret", 1000, async () => { throw new Error("subscription=secret"); }));
   const output = await broken({ query: "a question" });
   assert.equal(output.structuredContent.error?.code, "SEARCH_UNAVAILABLE"); assert.ok(!JSON.stringify(output).includes("subscription=secret"));
 });
 
-test("Brave rejects malformed and oversized responses and represents no results", async () => {
-  for (const payload of [{ web: { results: "bad" } }, { padding: "x".repeat(1000001) }]) {
-    const output = await createSearchHandler(config, new BraveSearchProvider("secret", 1000, async () => jsonResponse(payload)))({ query: "a question" });
+test("Browserbase rejects malformed and oversized responses and represents no results", async () => {
+  for (const payload of [{ results: "bad" }, { padding: "x".repeat(1000001) }]) {
+    const output = await createSearchHandler(config, new BrowserbaseSearchProvider("secret", 1000, async () => jsonResponse(payload)))({ query: "a question" });
     assert.equal(output.isError, true); assert.equal(output.structuredContent.error?.code, "SEARCH_UNAVAILABLE");
   }
-  const empty = await new BraveSearchProvider("secret", 1000, async () => jsonResponse({ web: { results: [] } })).search({ query: "a question", maxResults: 5 });
+  const empty = await new BrowserbaseSearchProvider("secret", 1000, async () => jsonResponse({ results: [] })).search({ query: "a question", maxResults: 5 });
   assert.equal(empty.sources.length, 0); assert.ok(empty.warnings.length);
+});
+
+test("Browserbase shortens long questions with a warning", async () => {
+  const query = "research ".repeat(30);
+  const provider = new BrowserbaseSearchProvider("secret", 1000, async (_url, init) => {
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.query.length, 200);
+    assert.equal(body.numResults, 5);
+    return jsonResponse({ results: [] });
+  });
+  const output = await provider.search({ query, maxResults: 5 });
+  assert.ok(output.warnings.some((warning) => warning.includes("200-character")));
 });
 
 test("article extraction keeps provenance, date and paragraphs while excluding scripts and navigation", () => {

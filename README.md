@@ -2,7 +2,7 @@
 
 An MCP app for researching a focused question, inspecting public sources, and handing retrieved evidence to the connected assistant for a cited brief.
 
-**Status:** runnable MVP with two MCP tools, React views, a Brave Search adapter, and bounded public-page retrieval.
+**Status:** runnable MVP with two MCP tools, React views, a Browserbase Search adapter, and bounded public-page retrieval.
 
 ## Run locally
 
@@ -35,9 +35,16 @@ Demo text is invented for exercising the workflow; it is not public evidence. Ot
 
 ## Enable live search
 
-Copy `.env.example` to `.env`, set `SEARCH_PROVIDER=brave`, and supply `BRAVE_SEARCH_API_KEY`. Restart the server after configuration changes. Obtain a key from the [Brave Search API dashboard](https://api-dashboard.search.brave.com/); keys never appear in tool output.
+Create a Browserbase account and API key in the [Browserbase dashboard](https://www.browserbase.com/). Copy `.env.example` to `.env`, then set:
 
-Live questions are sent to Brave, and selected pages are requested from public websites. This server does not persist questions, source text, or research history. The connected host and provider may have their own retention policies.
+```dotenv
+SEARCH_PROVIDER=browserbase
+BROWSERBASE_API_KEY=your_browserbase_key
+```
+
+Restart the server after changing `.env`. Browserbase's free plan currently includes 1,000 Search calls per month; check its [pricing](https://www.browserbase.com/pricing) for current limits. This app uses the [Search API](https://docs.browserbase.com/platform/search/overview) only for discovery and fetches selected public pages itself. The Google/Chrome API key is not a Browserbase key. Keys never appear in tool output.
+
+Live questions are sent to Browserbase, and selected pages are requested from public websites. This server does not persist questions, source text, or research history. The connected host and provider may have their own retention policies. Browserbase Search accepts at most 200 characters per query; longer questions are shortened with a warning. Domain filters are enforced on returned results, so restrictive filters may yield fewer sources.
 
 ## Tools
 
