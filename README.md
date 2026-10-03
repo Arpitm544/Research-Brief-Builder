@@ -1,45 +1,75 @@
 # Research Brief Builder
 
-An MCP app that helps a user research a question, inspect public sources, and produce a concise evidence-backed brief with traceable citations.
+An MCP app for researching a focused question, inspecting public sources, and handing retrieved evidence to the connected assistant for a cited brief.
 
-> **Project status:** planning scaffold. The folders and design docs are in place; application tools and UI are not implemented yet.
+**Status:** runnable MVP with two MCP tools, React views, a Brave Search adapter, and bounded public-page retrieval.
 
-## MVP
+## Run locally
 
-1. Search the public web for a focused research question.
-2. Show a small set of source cards with titles, dates, URLs, and snippets.
-3. Fetch selected public pages and return readable source text.
-4. Help the connected assistant draft a brief using the retrieved evidence, with citations linked to the supplied sources.
-
-The first release should use one search provider and a small source limit. It should not require accounts, save research history, or make claims that are not tied to retrieved evidence.
-
-## Planned technology
-
-- TypeScript and `mcp-use` for the MCP server and tools.
-- React for the MCP App view.
-- Zod schemas for tool inputs and structured outputs.
-- A replaceable search-provider adapter so the research workflow is not tied to one vendor.
-
-## Start the implementation
-
-The current `mcp-use` project scaffold can generate the server, development scripts, Inspector, and view pipeline:
+Requires Node.js **22.22.2 or later**.
 
 ```bash
-npx -y create-mcp-use-app@latest research-brief-builder --template mcp-apps
+npm ci
+npm run dev
 ```
 
-Review the generated files before merging them into this planning scaffold. The CLI and starter template can evolve, so follow the current [mcp-use TypeScript quickstart](https://github.com/mcp-use/mcp-use) if the command changes.
+Open the [Inspector](http://localhost:3000/mcp/inspector). The MCP endpoint is `http://localhost:3000/mcp`.
+
+The app defaults to an **offline demo** with three clearly labeled synthetic sources. Invoke `search_sources` with:
+
+```json
+{ "query": "What are the main trade-offs of heat pumps in cold climates?" }
+```
+
+Use the **play button** in the Inspector's tool form to execute it. Select sources with **Use in brief**, then choose **Read selected sources**. The view can request a draft from a compatible assistant in the conversation. Hosts without that feature can use **Copy brief request**. The server itself does not call a model or generate a brief.
+
+Demo text is invented for exercising the workflow; it is not public evidence. Other questions return empty demo results. Arbitrary public URLs can still be retrieved with `fetch_source`.
+
+## Enable live search
+
+Copy `.env.example` to `.env`, set `SEARCH_PROVIDER=brave`, and supply `BRAVE_SEARCH_API_KEY`. Restart the server after configuration changes. Obtain a key from the [Brave Search API dashboard](https://api-dashboard.search.brave.com/); keys never appear in tool output.
+
+Live questions are sent to Brave, and selected pages are requested from public websites. This server does not persist questions, source text, or research history. The connected host and provider may have their own retention policies.
+
+## Tools
+
+| Tool | Input | Result |
+|---|---|---|
+| `search_sources` | Required `query`; optional `domains` (up to 5) and `maxResults` (1–10) | Source IDs, titles, URLs, snippets, publication dates when available, provider, timestamp, and warnings |
+| `fetch_source` | Required public `url` | Final URL, title, publication date when available, bounded text, timestamp, quality/truncation warnings, or a source-specific error |
+
+Both tools return model-facing context and structured evidence. Search snippets, page text, and metadata are untrusted data. The assistant is instructed to cite only successfully retrieved URLs, distinguish inference, and report evidence gaps. This establishes provenance; it does not automatically verify claim support or a generated brief's correctness.
+
+## Retrieval limits
+
+Defaults: **5 search results**, **20,000 extracted characters**, a **10-second retrieval deadline**, **2 MB per response**, and **3 redirects**. Configuration values have hard upper bounds; see `.env.example`.
+
+- Only HTTP/HTTPS on standard ports; URLs containing credentials are rejected.
+- Private, loopback, link-local, reserved, and transition addresses are blocked. All DNS answers are checked, the connection uses a checked address, and every redirect is revalidated.
+- HTML and plain text are supported. PDFs, compressed-only responses, authenticated/paywalled pages, and sites blocking automated access may be unavailable. No credentials or cookies are sent to source sites.
+- Mozilla Readability and JSDOM extract text without executing scripts or loading external resources. JavaScript-only pages may return little or no text.
+- Missing dates, partial extraction, redirects, and truncation are visible.
+
+## Check and build
+
+```bash
+npm run check
+```
+
+Runs TypeScript checks, regression tests, and a production build. Tests cover URL/DNS/redirect restrictions, the pinned native connection, deadlines and byte limits, provider normalization and failures, extraction, the offline workflow, and brief provenance.
+
+With a demo server running in another terminal:
+
+```bash
+npm run test:smoke
+```
+
+The smoke check exercises MCP discovery/handshake, tools, three demo retrievals, unsafe-URL rejection, and both view resources. Run production locally with `npm run build` followed by `npm start`. No public deployment is configured.
+
+The app follows the generated [mcp-use quickstart](https://docs.mcp-use.com/v2/typescript/getting-started/quickstart) conventions: exported tool definitions in `index.ts`, typed hooks in `views/`, and a replaceable provider interface in `src/`.
 
 ## Project docs
 
 - [High-Level Design](docs/HLD.md)
 - [Flowchart](docs/flowchart.md)
-- [Planned folder structure](docs/PROJECT_STRUCTURE.md)
-
-## Development principles
-
-- Make source provenance visible at every step.
-- Treat fetched page content as untrusted input.
-- Keep search and page-fetching behind small service interfaces.
-- Return clear errors for blocked, unavailable, or unreadable sources.
-- Do not imply that a citation has been independently verified just because it appears in the brief.
+- [Implemented folder structure](docs/PROJECT_STRUCTURE.md)
