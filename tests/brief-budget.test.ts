@@ -25,20 +25,52 @@ test("the evidence budget includes JSON escaping and metadata across ten long so
   assert.ok(buildBriefPrompt("Evidence?", results).length < BRIEF_EVIDENCE_BUDGET + 2000);
 });
 
-test("query-matched passages near the end survive the shared budget", () => {
+test("relevant passages near the end survive the shared budget", () => {
   const results = Array.from({ length: 10 }, (_, index) => evidence(index, "Unrelated filler. ".repeat(1500) + "\n\nGeothermal efficiency improves heating."));
   const prepared = prepareBriefEvidence("Geothermal efficiency heating", results);
   for (const source of prepared.sources) assert.ok(source.excerpts.some((excerpt) => excerpt.text.includes("Geothermal efficiency")));
 });
 
-test("query matches survive excerpts smaller than a scored window", () => {
+test("query matches survive heavily escaped passages", () => {
   const results = Array.from({ length: 10 }, (_, index) => evidence(index, "\u0000".repeat(570) + " geothermal " + "\u0000".repeat(40)));
   const prepared = prepareBriefEvidence("geothermal", results);
   assert.ok(prepared.usedChars <= BRIEF_EVIDENCE_BUDGET);
   for (const [index, source] of prepared.sources.entries()) {
     assert.ok(source.excerpts.some((excerpt) => excerpt.text.includes("geothermal")));
-    assert.ok(source.excerpts.every((excerpt) => excerpt.text.length < 600));
     for (const excerpt of source.excerpts) assert.equal(excerpt.text, results[index]!.source!.text.slice(excerpt.start, excerpt.end));
+  }
+});
+
+test("three readable sources fit as complete text without fragmented excerpts", () => {
+  const lengths = [5591, 6619, 15108];
+  const results = lengths.map((length, index) => evidence(index, ("Electric vehicles have benefits and trade-offs.\n\n").repeat(Math.ceil(length / 49)).slice(0, length)));
+  const prepared = prepareBriefEvidence("What are the benefits of electric vehicles?", results);
+  assert.ok(prepared.usedChars <= BRIEF_EVIDENCE_BUDGET);
+  assert.equal(prepared.excerpted, false);
+  for (const [index, source] of prepared.sources.entries()) {
+    assert.equal(source.excerpts.length, 1);
+    assert.equal(source.excerpts[0]!.text, results[index]!.source!.text);
+  }
+});
+
+test("a long source stays complete when shorter sources leave room in the shared budget", () => {
+  const results = [evidence(1, "Long first source. ".repeat(1100)), evidence(2, "Short second source.")];
+  const prepared = prepareBriefEvidence("first source", results);
+  assert.equal(prepared.excerpted, false);
+  assert.deepEqual(prepared.sources.map((source) => source.excerpts.length), [1, 1]);
+  assert.equal(prepared.sources[0]!.excerpts[0]!.text, results[0]!.source!.text);
+});
+
+test("adjacent selected paragraphs become one readable passage", () => {
+  const paragraph = "A complete paragraph about electric vehicles and charging. ".repeat(9);
+  const text = Array.from({ length: 24 }, (_, index) => `${index}: ${paragraph}`).join("\n\n");
+  const results = Array.from({ length: 10 }, (_, index) => evidence(index, text));
+  const prepared = prepareBriefEvidence("electric vehicles charging", results);
+  assert.equal(prepared.excerpted, true);
+  for (const source of prepared.sources) {
+    assert.equal(source.excerpts.length, 1);
+    assert.ok(source.excerpts[0]!.text.includes("\n\n"));
+    assert.equal(source.excerpts[0]!.start, 0);
   }
 });
 
