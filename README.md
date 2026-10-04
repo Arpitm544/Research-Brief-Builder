@@ -29,7 +29,7 @@ The app defaults to an **offline demo** with three clearly labeled synthetic sou
 { "query": "What are the main trade-offs of heat pumps in cold climates?" }
 ```
 
-Use the **play button** in the Inspector's tool form to execute it. Select sources with **Use in brief**, then choose **Read selected sources**. The view can request a draft from a compatible assistant in the conversation. Hosts without that feature can use **Copy brief request**. The server itself does not call a model or generate a brief.
+Use the **play button** in the Inspector's tool form to execute it. Select sources with **Use in brief**, then choose **Read selected sources**. The view can request a draft from a compatible assistant in the conversation. In hosts without that feature, choose **Copy request for assistant** and paste it into your assistant. The preview shows a formatted evidence payload and the requested brief outline; it is a prompt, not a finished brief. The server itself does not call a model or generate a brief.
 
 Demo text is invented for exercising the workflow; it is not public evidence. Other questions return empty demo results. Arbitrary public URLs can still be retrieved with `fetch_source`.
 
@@ -68,7 +68,7 @@ Defaults: **5 search results**, **20,000 extracted characters**, a **10-second r
 
 ## Brief evidence budget
 
-Brief requests share a **32,000-character budget for serialized evidence**, including metadata and JSON escaping. Successfully read sources are deduplicated by final URL and receive shares of the remaining budget. Keyword-matched text excerpts retain offsets into the retrieved text, source metadata, and partial-extraction flags. Matching selects passages; it does not verify relevance or claims. Full retrieved text stays available on source cards. The sidebar shows budget usage and whether text was omitted. Instructions add fewer than 2,000 characters to the request.
+Brief requests share a **32,000-character budget for formatted JSON evidence**, including metadata, indentation, and JSON escaping. Successfully read sources are deduplicated by final URL and receive shares of the remaining budget. Keyword-matched text excerpts retain offsets into the retrieved text, source metadata, and partial-extraction flags. Matching selects passages; it does not verify relevance or claims. Full retrieved text stays available on source cards. The sidebar shows budget usage and whether text was omitted. Instructions add fewer than 2,000 characters to the request and ask for an answer, findings, trade-offs, uncertainty, and linked sources.
 
 The research view is split into the search form, source cards, brief panel, workspace coordinator, and a retrieval hook. The hook keeps successful and failed reads separately, guards against overlapping batches, and stops UI updates when its workspace unmounts.
 
