@@ -103,7 +103,9 @@
 .privacy-note { display: flex; gap: 8px; border-top: 1px solid var(--line); margin-top: 23px; padding-top: 14px; font-size: 10px; color: var(--muted); line-height: 1.65; }
 .privacy-note > span { color: var(--accent); font-size: 16px; }
 .copy-request { font-size: 11px; margin-top: 12px; color: var(--accent); }
-.copy-request textarea { width: 100%; margin: 8px 0 0; font-size: 10px; resize: vertical; }
+.copy-request > p:first-child { margin: 0 0 10px; color: var(--muted); line-height: 1.5; }
+.copy-request summary { cursor: pointer; }
+.copy-request textarea { width: 100%; margin: 8px 0 0; font-size: 11px; line-height: 1.5; resize: vertical; }
 .error-message { margin: 15px 0; color: var(--error); background: var(--card); border: 1px solid var(--error); border-radius: 6px; padding: 12px; font-size: 12px; overflow-wrap: anywhere; }
 .success-message { color: var(--accent); font-size: 12px; }
 .empty-panel { padding: 32px 24px; text-align: center; border: 1px dashed var(--line); border-radius: 9px; }

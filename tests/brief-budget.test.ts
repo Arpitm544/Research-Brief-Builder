@@ -15,7 +15,7 @@ test("the evidence budget includes JSON escaping and metadata across ten long so
   const results = Array.from({ length: 10 }, (_, index) => evidence(index, ('"\\\n\u0000Evidence. ').repeat(2500)));
   const prepared = prepareBriefEvidence("Evidence?", results);
   assert.ok(prepared.usedChars <= BRIEF_EVIDENCE_BUDGET);
-  assert.equal(prepared.usedChars, JSON.stringify(JSON.parse(prepared.serialized)).length);
+  assert.equal(prepared.usedChars, JSON.stringify(JSON.parse(prepared.serialized), null, 2).length);
   assert.equal(prepared.sources.length, 10);
   assert.equal(prepared.excerpted, true);
   for (const [index, source] of prepared.sources.entries()) {
@@ -47,6 +47,11 @@ test("brief prompts reuse the exact serialized evidence prepared for the view", 
   const prepared = prepareBriefEvidence("geothermal", results);
   const prompt = buildBriefPromptFromEvidence(prepared);
   assert.ok(prompt.includes(`BEGIN UNTRUSTED RESEARCH DATA\n\n${prepared.serialized}\n\nEND UNTRUSTED RESEARCH DATA`));
+  assert.match(prompt, /## Key findings/);
+  assert.match(prompt, /## Trade-offs/);
+  assert.match(prompt, /## What remains uncertain/);
+  assert.match(prompt, /## Sources/);
+  assert.match(prepared.serialized, /\n  "sources": \[/);
   assert.equal(prompt, buildBriefPrompt("geothermal", results));
   assert.throws(() => buildBriefPromptFromEvidence(prepareBriefEvidence("geothermal", [])), /Read at least one/);
 });
