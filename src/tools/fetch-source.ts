@@ -16,9 +16,13 @@ export function createFetchHandler(
       warnings: [], isDemo: false, trust: "untrusted",
     };
     try {
+      const candidateUrl = rawInput?.url;
+      if (typeof candidateUrl !== "string" || !candidateUrl.trim()) {
+        throw new ResearchFailure("MISSING_URL", "fetch_source needs a website URL in the url field. For a question or topic without a URL, call search_sources with the user's text.");
+      }
       const deadline = performance.now() + config.FETCH_TIMEOUT_MS;
-      const input = fetchInputSchema.parse(rawInput);
-      const url = validatePublicUrl(input.url).href;
+      fetchInputSchema.parse(rawInput);
+      const url = validatePublicUrl(candidateUrl.trim()).href;
       base.requestedUrl = url;
       const fixture = config.SEARCH_PROVIDER === "demo" ? demoPage(url) : undefined;
       const page = fixture ?? await fetchPage(url, signal);

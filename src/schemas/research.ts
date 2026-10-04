@@ -12,7 +12,7 @@ export const searchInputSchema = z.object({
 }).strict();
 
 export const fetchInputSchema = z.object({
-  url: z.string().trim().min(1).max(2048).describe("Required: the exact public HTTP or HTTPS URL provided by the user or returned by search_sources. Private addresses and nonstandard ports are blocked."),
+  url: z.string().trim().max(2048).optional().describe("Required for retrieval: the exact public HTTP or HTTPS URL provided by the user or returned by search_sources. If the request contains only question text, call search_sources instead. Private addresses and nonstandard ports are blocked."),
 }).strict();
 
 export const searchOutputSchema = z.object({

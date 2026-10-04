@@ -22,7 +22,7 @@ test("configuration and tool inputs enforce bounded values without exposing secr
     assert.throws(() => readConfig(env), (error: unknown) => error instanceof Error && !error.message.includes("secret-provider-key"));
   }
   assert.equal(searchInputSchema.safeParse({ query: "ok" }).success, false);
-  assert.equal(fetchInputSchema.safeParse({}).success, false);
+  assert.equal(fetchInputSchema.safeParse({}).success, true);
   assert.equal(fetchInputSchema.safeParse({ url: "https://public.org/article" }).success, true);
   for (const domains of [["https://public.org"], ["a.org/path"], ["a.org:443"], ["a.org", "b.org", "c.org", "d.org", "e.org", "f.org"]]) {
     assert.equal(searchInputSchema.safeParse({ query: "question", domains }).success, false);
@@ -33,6 +33,20 @@ test("assistant tool guidance routes plain questions to search and supplied URLs
   assert.match(assistantInstructions, /without including a website URL, call search_sources/);
   assert.match(assistantInstructions, /includes a website URL.*call fetch_source.*exact URL.*required url argument/s);
   assert.match(assistantInstructions, /Never call fetch_source without a URL/);
+});
+
+test("fetch_source gives a specific recovery hint when the URL is missing", async () => {
+  let fetchCalls = 0;
+  const retrieve = createFetchHandler(config, async () => {
+    fetchCalls++;
+    throw new Error("fetch should not run without a URL");
+  });
+  const response = await retrieve({});
+  assert.equal(fetchCalls, 0);
+  assert.equal(response.structuredContent.status, "error");
+  assert.equal(response.structuredContent.error?.code, "MISSING_URL");
+  assert.match(response.structuredContent.error?.message ?? "", /call search_sources/);
+  assert.equal(fetchOutputSchema.safeParse(response.structuredContent).success, true);
 });
 
 test("Browserbase requires a nonblank API key at startup while demo configuration can omit it", () => {
