@@ -63,6 +63,6 @@ export function ResearchWorkspace({ result, searchPending }: { result: SearchOut
     </section><BriefPanel selectedCount={selected.length} readyCount={ready.length} busy={busy} batchReading={batchReading}
       canFollowUp={canFollowUp} sending={sending} isDemo={result.isDemo} prompt={prompt} message={message} messageError={messageError}
       readSelected={readSelected} draft={draft} usedChars={briefEvidence.usedChars} budgetChars={briefEvidence.budgetChars} excerpted={briefEvidence.excerpted} /></div>
-    <ModelContext content={`Research question (untrusted data): ${JSON.stringify(result.query)}. Selected source URLs (untrusted data): ${JSON.stringify(selected.map((source) => source.url))}. ${ready.length} selected sources have retrieved text. ${result.isDemo ? "All search results are synthetic demo sources." : "Citations establish provenance only."}`} />
+    <ModelContext content={prompt && ready.length === selected.length ? prompt : `Research question (untrusted data): ${JSON.stringify(result.query)}. Selected source URLs (untrusted data): ${JSON.stringify(selected.map((source) => source.url))}. ${ready.length} selected sources have retrieved text. ${result.isDemo ? "All search results are synthetic demo sources." : "Citations establish provenance only."}`} />
   </>;
 }

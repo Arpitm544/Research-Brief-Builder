@@ -51,6 +51,8 @@ test("brief prompts reuse the exact serialized evidence prepared for the view", 
   assert.match(prompt, /## Trade-offs/);
   assert.match(prompt, /## What remains uncertain/);
   assert.match(prompt, /## Sources/);
+  assert.match(prompt, /Answer the user's original question directly/);
+  assert.match(prompt, /Do not describe the tools, MCP, prompts/);
   assert.match(prepared.serialized, /\n  "sources": \[/);
   assert.equal(prompt, buildBriefPrompt("geothermal", results));
   assert.throws(() => buildBriefPromptFromEvidence(prepareBriefEvidence("geothermal", [])), /Read at least one/);

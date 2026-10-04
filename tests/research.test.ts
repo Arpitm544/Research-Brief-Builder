@@ -79,7 +79,9 @@ test("demo search and retrieval work offline and hand off explicitly synthetic e
 test("demo search represents unrelated questions and domain filters as empty results", async () => {
   const search = createSearchHandler(config, new DemoSearchProvider());
   assert.equal((await search({ query: "Quantum mechanics experiments" })).structuredContent.sources.length, 0);
-  assert.equal((await search({ query: demoQuestion, domains: ["energy.gov"] })).structuredContent.sources.length, 0);
+  const restricted = await search({ query: demoQuestion, domains: ["energy.gov"] });
+  assert.equal(restricted.structuredContent.sources.length, 0);
+  assert.match(restricted.content[0]!.text, /retry the same query without domains/);
 });
 
 test("demo search recognizes hyphenated heat-pump and cold-climate questions", async () => {
