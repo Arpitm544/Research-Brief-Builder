@@ -1,5 +1,5 @@
 import { ModelContext, useHostContext, useOpenExternal, useSendFollowUp, useViewState } from "mcp-use/react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { SearchOutput } from "../../src/schemas/research.js";
 import { buildBriefPromptFromEvidence, prepareBriefEvidence } from "../shared/brief-context.js";
 import { Warnings } from "../shared/components.js";
@@ -16,6 +16,7 @@ export function ResearchWorkspace({ result, searchPending }: { result: SearchOut
   const [message, setMessage] = useState<string>();
   const [messageError, setMessageError] = useState<string>();
   const [sending, setSending] = useState(false);
+  const draftInFlight = useRef(false);
   const selected = useMemo(() => result.sources.filter((source) => state.selectedUrls.includes(source.url)), [result.sources, state.selectedUrls]);
   const ready = useMemo(() => selected.flatMap((source) => evidence[source.url]?.status === "success" ? [evidence[source.url]!] : []), [selected, evidence]);
   const briefEvidence = useMemo(() => prepareBriefEvidence(result.query, ready), [result.query, ready]);
@@ -38,11 +39,12 @@ export function ResearchWorkspace({ result, searchPending }: { result: SearchOut
   }
 
   async function draft() {
-    if (!prompt) return;
+    if (!prompt || draftInFlight.current) return;
+    draftInFlight.current = true;
     setSending(true); setMessage(undefined); setMessageError(undefined);
     try { await sendFollowUp({ prompt }); setMessage("Brief requested. Continue in the conversation to see the assistant's draft."); }
     catch (error) { setMessageError(error instanceof Error ? error.message : "The host could not accept the brief request."); }
-    finally { setSending(false); }
+    finally { draftInFlight.current = false; setSending(false); }
   }
 
   function open(url: string) {
