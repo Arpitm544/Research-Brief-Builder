@@ -4,27 +4,27 @@
 
 ```mermaid
 flowchart TD
-    A([Start]) --> B[User enters a focused research question]
-    B --> C[Host calls search_sources]
-    C --> D{Search successful?}
-    D -- No --> E[Show retryable error and keep the question]
-    E --> B
-    D -- Yes --> F{Any useful sources?}
-    F -- No --> G[Suggest narrowing or rephrasing the question]
-    G --> B
-    F -- Yes --> H[Render source cards in the MCP App]
-    H --> I[User reviews/selects sources]
-    I --> J[Host calls fetch_source for selected URLs]
-    J --> K{Page safely fetched and readable?}
-    K -- No --> L[Show source-specific failure or extraction warning]
-    L --> I
-    K -- Yes --> M[Return bounded text and source metadata]
-    M --> N[Host drafts a brief using retrieved evidence]
-    N --> O[Attach citations using returned source URLs]
-    O --> P[Show brief and source list]
-    P --> Q{Need more or conflicting evidence?}
-    Q -- Yes --> B
-    Q -- No --> R([Finish])
+    A([Start]) --> B[User sends a request]
+    B --> C{Does the request include a specific website URL?}
+    C -- Yes --> J[Host calls fetch_source with the supplied URL]
+    C -- No --> D[Host calls search_sources with the question text]
+    D --> E{Search successful?}
+    E -- No --> F[Show retryable error and keep the question]
+    F --> B
+    E -- Yes --> G{Any useful sources?}
+    G -- No --> H[Suggest narrowing or rephrasing the question]
+    H --> B
+    G -- Yes --> I[Render source cards in the MCP App]
+    I --> K[Host selects relevant result URLs]
+    K --> J
+    J --> L{Page safely fetched and readable?}
+    L -- No --> M[Show source-specific failure or extraction warning]
+    M --> B
+    L -- Yes --> N[Return bounded text and source metadata]
+    N --> O[Host answers using retrieved evidence]
+    O --> P[Attach citations using returned source URLs]
+    P --> Q[Show answer and source list]
+    Q --> R([Finish])
 ```
 
 ## Trust boundary
