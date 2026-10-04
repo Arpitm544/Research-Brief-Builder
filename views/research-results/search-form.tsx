@@ -4,7 +4,7 @@ import type { SearchInput } from "../../src/schemas/research.js";
 export function SearchForm({ query, pending, onSearch }: { query: string; pending: boolean; onSearch: (input: SearchInput) => Promise<void> }) {
   const [question, setQuestion] = useState(query);
   const [domains, setDomains] = useState("");
-  const [count, setCount] = useState(5);
+  const [count, setCount] = useState(3);
   const [questionError, setQuestionError] = useState<string>();
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -19,9 +19,8 @@ export function SearchForm({ query, pending, onSearch }: { query: string; pendin
   }
   return <form className="search-form" onSubmit={submit}>
     <label htmlFor="research-question" className="eyebrow">01 / Your research question</label>
-    <div className="search-field"><input id="research-question" value={question} onChange={(event) => { setQuestion(event.target.value); setQuestionError(undefined); }} minLength={3} maxLength={400} required placeholder="What are the trade-offs of…?" disabled={pending} aria-invalid={questionError ? true : undefined} aria-describedby={questionError ? "research-question-error" : undefined} /><button className="primary-button" disabled={pending} type="submit">{pending ? "Searching…" : "Find sources"}<span aria-hidden="true">↗</span></button></div>
+    <div className="search-field"><input id="research-question" value={question} onChange={(event) => { setQuestion(event.target.value); setQuestionError(undefined); }} minLength={3} maxLength={400} required placeholder="Ask a question you want evidence for…" disabled={pending} aria-invalid={questionError ? true : undefined} aria-describedby={questionError ? "research-question-error" : undefined} /><button className="primary-button" disabled={pending} type="submit">{pending ? <><span className="button-spinner" aria-hidden="true" />Searching…</> : <>Find sources<span aria-hidden="true">↗</span></>}</button></div>
     {questionError && <p id="research-question-error" className="error-message" role="alert">{questionError}</p>}
     <details className="search-options"><summary>Search options</summary><div><label>Domains <input value={domains} onChange={(event) => setDomains(event.target.value)} placeholder="energy.gov, nrel.gov" disabled={pending} /></label><label>Source limit <select value={count} onChange={(event) => setCount(Number(event.target.value))} disabled={pending}>{[3, 5, 10].map((value) => <option key={value} value={value}>{value}</option>)}</select></label></div><p>Use up to five comma-separated domains. The server may return fewer sources.</p></details>
   </form>;
 }
-
