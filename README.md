@@ -29,7 +29,7 @@ The app defaults to an **offline demo** with three clearly labeled synthetic sou
 { "query": "What are the main trade-offs of heat pumps in cold climates?" }
 ```
 
-Use the **play button** in the Inspector's tool form to execute it. Select sources with **Use in brief**, then choose **Read selected sources**. The view can request a draft from a compatible assistant in the conversation. In hosts without that feature, choose **Copy request for assistant** and paste it into your assistant. The preview shows a formatted evidence payload and the requested brief outline; it is a prompt, not a finished brief. The server itself does not call a model or generate a brief.
+Use the **play button** in the Inspector's tool form to execute it. Select sources with **Use in brief**, then choose **Read selected sources**. The view can request a draft from a compatible assistant in the conversation. In hosts without that feature, choose **Copy request for assistant** and paste it into your assistant. If the host blocks automatic copying, the button opens the preview and selects the entire request so you can press **Cmd+C** or **Ctrl+C**. The preview shows a formatted evidence payload and the requested brief outline; it is a prompt, not a finished brief. The server itself does not call a model or generate a brief.
 
 Demo text is invented for exercising the workflow; it is not public evidence. Other questions return empty demo results. Arbitrary public URLs can still be retrieved with `fetch_source`.
 
