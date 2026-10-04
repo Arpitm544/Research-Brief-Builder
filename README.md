@@ -60,7 +60,8 @@ Requests with question or topic text go to `search_sources`. Requests to read a 
 
 ## Testing in Claude
 
-**Claude test video:** https://github.com/user-attachments/assets/bd412455-83f1-4646-9744-2a11530315de
+**Claude test video:** https://github.com/user-attachments/assets/87b9f3b3-1f3c-4725-9448-e41c699a98be
+
 
 ## Enable live search
 
