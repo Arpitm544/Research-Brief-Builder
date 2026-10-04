@@ -18,19 +18,19 @@ export function BriefPanel({ selectedCount, readyCount, busy, batchReading, canF
   }
 
   async function copyRequest() {
-    // The Inspector embeds this view in an iframe where Clipboard API access may be denied.
-    try {
-      if (document.execCommand("copy")) {
-        setCopyStatus("Request selected. Paste it into your assistant; if nothing pastes, press Cmd+C or Ctrl+C first.");
-        return;
-      }
-    } catch { /* Try the Clipboard API below. */ }
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
       await navigator.clipboard.writeText(prompt);
       setCopyStatus("Request copied. Paste it into your assistant to draft the brief.");
     } catch {
+      // The Inspector embeds this view in an iframe where Clipboard API access may be denied.
       selectRequest();
+      try {
+        if (document.execCommand("copy")) {
+          setCopyStatus("Request copied. Paste it into your assistant to draft the brief.");
+          return;
+        }
+      } catch { /* Show the selected request for manual copying. */ }
       setCopyStatus("Browser blocked automatic copy. The full request is selected; press Cmd+C or Ctrl+C.");
     }
   }
