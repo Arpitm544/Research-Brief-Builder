@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import type { FetchOutput } from "../src/schemas/research.js";
 import { BRIEF_EVIDENCE_BUDGET, buildBriefPrompt, buildBriefPromptFromEvidence, prepareBriefEvidence } from "../views/shared/brief-context.js";
@@ -56,6 +57,17 @@ test("brief prompts reuse the exact serialized evidence prepared for the view", 
   assert.match(prepared.serialized, /\n  "sources": \[/);
   assert.equal(prompt, buildBriefPrompt("geothermal", results));
   assert.throws(() => buildBriefPromptFromEvidence(prepareBriefEvidence("geothermal", [])), /Read at least one/);
+});
+
+test("the workspace keeps ModelContext summary-only while delivering the full prompt via follow-up", async () => {
+  const workspace = await readFile(new URL("../views/research-results/research-workspace.tsx", import.meta.url), "utf8");
+  const content = workspace.match(/<ModelContext\s+content=\{([\s\S]*?)\}\s*\/>/)?.[1];
+  assert.ok(content, "the workspace has a ModelContext content expression");
+  assert.match(content, /Research question \(untrusted data\):/);
+  assert.match(content, /Selected source URLs \(untrusted data\):/);
+  assert.match(content, /\$\{ready\.length\} selected sources have retrieved text/);
+  assert.doesNotMatch(content, /\bprompt\b/);
+  assert.match(workspace, /sendFollowUp\(\s*\{\s*prompt\s*\}\s*\)/);
 });
 
 test("short sources retain all text while failures and duplicate final URLs are excluded", () => {
