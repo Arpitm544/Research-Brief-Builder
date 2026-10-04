@@ -58,6 +58,12 @@ Requests with question or topic text go to `search_sources`. Requests to read a 
 | `research-results` | Search sources, inspect cards, choose evidence, and prepare a brief request. |
 | `source-reader` | Inspect retrieved text, source details, and extraction warnings. |
 
+## Testing in Claude
+
+Add a screen recording here showing the Research Brief Builder working in Claude. Replace the placeholder with your video link or embed it in the README.
+
+**Claude test video:** _Add video link here_
+
 ## Enable live search
 
 Create a [Browserbase](https://www.browserbase.com/) account and API key. Copy `.env.example` to `.env`, then configure:
