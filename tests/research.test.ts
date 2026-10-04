@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Readability } from "@mozilla/readability";
+import { assistantInstructions } from "../src/config/assistant-instructions.js";
 import { readConfig } from "../src/config/env.js";
 import { DemoSearchProvider, demoQuestion, demoSources } from "../src/demo/fixtures.js";
-import { fetchOutputSchema, searchInputSchema, searchOutputSchema } from "../src/schemas/research.js";
+import { fetchInputSchema, fetchOutputSchema, searchInputSchema, searchOutputSchema } from "../src/schemas/research.js";
 import { buildBriefPrompt } from "../views/shared/brief-context.js";
 import { extractText } from "../src/services/extract-text.js";
 import { BrowserbaseSearchProvider } from "../src/services/browserbase-search-adapter.js";
@@ -21,9 +22,17 @@ test("configuration and tool inputs enforce bounded values without exposing secr
     assert.throws(() => readConfig(env), (error: unknown) => error instanceof Error && !error.message.includes("secret-provider-key"));
   }
   assert.equal(searchInputSchema.safeParse({ query: "ok" }).success, false);
+  assert.equal(fetchInputSchema.safeParse({}).success, false);
+  assert.equal(fetchInputSchema.safeParse({ url: "https://public.org/article" }).success, true);
   for (const domains of [["https://public.org"], ["a.org/path"], ["a.org:443"], ["a.org", "b.org", "c.org", "d.org", "e.org", "f.org"]]) {
     assert.equal(searchInputSchema.safeParse({ query: "question", domains }).success, false);
   }
+});
+
+test("assistant tool guidance routes plain questions to search and supplied URLs to fetch", () => {
+  assert.match(assistantInstructions, /without including a website URL, call search_sources/);
+  assert.match(assistantInstructions, /includes a website URL.*call fetch_source.*exact URL.*required url argument/s);
+  assert.match(assistantInstructions, /Never call fetch_source without a URL/);
 });
 
 test("Browserbase requires a nonblank API key at startup while demo configuration can omit it", () => {

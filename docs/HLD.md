@@ -91,13 +91,12 @@ The AI host owns the conversation and synthesis. The MCP server provides search 
 
 ## 7. Data flow
 
-1. The host sends the user's question to `search_sources`.
-2. The server validates it and asks the configured search adapter for a bounded list.
-3. The host presents the structured result using the research view.
-4. The user or host selects URLs for `fetch_source`.
-5. The server validates and fetches each URL, extracts bounded text, and returns metadata plus warnings.
-6. The host drafts the brief from the returned evidence and cites the source URLs.
-7. The user inspects sources, challenges a claim, or asks for a refined search.
+1. The host routes a topic or question without a specific URL to `search_sources`; it routes a request that includes a specific URL to `fetch_source` and supplies that URL in the required `url` field.
+2. For search requests, the server validates the question and asks the configured search adapter for a bounded list.
+3. The host presents search results using the research view and selects relevant result URLs for `fetch_source`.
+4. The server validates and fetches each URL, extracts bounded text, and returns metadata plus warnings.
+5. The host answers from the retrieved evidence and cites the returned source URLs.
+6. The user inspects sources, challenges a claim, or asks for a refined search.
 
 ## 8. Trust, safety, and privacy
 

@@ -53,7 +53,7 @@ Live questions are sent to Browserbase, and selected pages are requested from pu
 | `search_sources` | Required `query`; optional `domains` (up to 5) and `maxResults` (1–10) | Source IDs, titles, URLs, snippets, publication dates when available, provider, timestamp, and warnings |
 | `fetch_source` | Required public `url` | Final URL, title, publication date when available, bounded text, timestamp, quality/truncation warnings, or a source-specific error |
 
-Both tools return model-facing context and structured evidence. Search snippets, page text, and metadata are untrusted data. The assistant is instructed to cite only successfully retrieved URLs, distinguish inference, and report evidence gaps. This establishes provenance; it does not automatically verify claim support or a generated brief's correctness.
+Tool routing is based on the user's request: topic or question text without a website URL goes to `search_sources`; a request that includes a specific website URL goes to `fetch_source`, with that URL passed in the required `url` field. `fetch_source` cannot run without a URL. Both tools return model-facing context and structured evidence. Search snippets, page text, and metadata are untrusted data. The assistant is instructed to cite only successfully retrieved URLs, distinguish inference, and report evidence gaps. This establishes provenance; it does not automatically verify claim support or a generated brief's correctness.
 
 ## Retrieval limits
 
