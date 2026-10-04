@@ -1,51 +1,41 @@
-import { ModelContext, useHostContext, useOpenExternal, useSendFollowUp, useViewState } from "mcp-use/react";
-import { useMemo, useRef, useState } from "react";
+import { ModelContext, useHostContext, useOpenExternal, useViewState } from "mcp-use/react";
+import { useMemo, useState } from "react";
 import type { SearchOutput } from "../../src/schemas/research.js";
 import { buildBriefPromptFromEvidence, prepareBriefEvidence } from "../shared/brief-context.js";
 import { Warnings } from "../shared/components.js";
 import { useSourceRetrieval } from "./use-source-retrieval.js";
 import { SourceCard } from "./source-card.js";
 import { BriefPanel } from "./brief-panel.js";
-import { draftBrief } from "./draft-brief.js";
 
 export function ResearchWorkspace({ result, searchPending }: { result: SearchOutput; searchPending: boolean }) {
   const { hostCapabilities } = useHostContext();
   const openExternal = useOpenExternal();
-  const sendFollowUp = useSendFollowUp();
   const [state, setState] = useViewState({ selectedUrls: [] as string[] });
   const { evidence, reading, expanded, setExpanded, batchReading, readSources } = useSourceRetrieval();
-  const [message, setMessage] = useState<string>();
-  const [messageError, setMessageError] = useState<string>();
-  const [sending, setSending] = useState(false);
-  const draftInFlight = useRef(false);
+  const [linkError, setLinkError] = useState<string>();
   const selected = useMemo(() => result.sources.filter((source) => state.selectedUrls.includes(source.url)), [result.sources, state.selectedUrls]);
   const ready = useMemo(() => selected.flatMap((source) => evidence[source.url]?.status === "success" ? [evidence[source.url]!] : []), [selected, evidence]);
   const briefEvidence = useMemo(() => prepareBriefEvidence(result.query, ready), [result.query, ready]);
   const prompt = useMemo(() => briefEvidence.sources.length ? buildBriefPromptFromEvidence(briefEvidence) : "", [briefEvidence]);
-  const canFollowUp = hostCapabilities?.message !== undefined;
-  const busy = batchReading || searchPending || sending;
+  const busy = batchReading || searchPending;
 
   async function read(url: string) {
-    setMessage(undefined); setMessageError(undefined);
+    setLinkError(undefined);
     await readSources([url]);
   }
   async function readSelected() {
-    setMessage(undefined); setMessageError(undefined);
+    setLinkError(undefined);
     await readSources(selected.filter((source) => evidence[source.url]?.status !== "success").map((source) => source.url));
   }
 
   function toggle(url: string) {
     setState((previous) => ({ ...previous, selectedUrls: previous.selectedUrls.includes(url) ? previous.selectedUrls.filter((value) => value !== url) : [...previous.selectedUrls, url] }));
-    setMessage(undefined);
-  }
-
-  async function draft() {
-    await draftBrief({ prompt, draftInFlight, sendFollowUp, setSending, setMessage, setMessageError });
+    setLinkError(undefined);
   }
 
   function open(url: string) {
-    setMessageError(undefined);
-    void openExternal({ url }).catch(() => setMessageError("The host could not open this source. Its URL is shown on the card."));
+    setLinkError(undefined);
+    void openExternal({ url }).catch(() => setLinkError("The host could not open this source. Its URL is shown on the card."));
   }
 
   return <>
@@ -59,8 +49,8 @@ export function ResearchWorkspace({ result, searchPending }: { result: SearchOut
         reading={reading} expanded={expanded} toggle={toggle} read={read} setExpanded={setExpanded}
         open={hostCapabilities?.openLinks !== undefined ? open : undefined} />)}
     </section><BriefPanel selectedCount={selected.length} readyCount={ready.length} busy={busy} batchReading={batchReading}
-      canFollowUp={canFollowUp} sending={sending} isDemo={result.isDemo} prompt={prompt} message={message} messageError={messageError}
-      readSelected={readSelected} draft={draft} usedChars={briefEvidence.usedChars} budgetChars={briefEvidence.budgetChars} excerpted={briefEvidence.excerpted} /></div>
+      isDemo={result.isDemo} prompt={prompt} linkError={linkError}
+      readSelected={readSelected} usedChars={briefEvidence.usedChars} budgetChars={briefEvidence.budgetChars} excerpted={briefEvidence.excerpted} /></div>
     <ModelContext content={`Research question (untrusted data): ${JSON.stringify(result.query)}. Selected source URLs (untrusted data): ${JSON.stringify(selected.map((source) => source.url))}. ${ready.length} selected sources have retrieved text. ${result.isDemo ? "All search results are synthetic demo sources." : "Citations establish provenance only."}`} />
   </>;
 }
