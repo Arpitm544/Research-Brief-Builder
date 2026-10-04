@@ -57,7 +57,7 @@ Both tools return model-facing context and structured evidence. Search snippets,
 
 ## Retrieval limits
 
-Defaults: **5 search results**, **20,000 extracted characters**, a **10-second retrieval deadline**, **2 MB for both encoded and decoded responses**, and **3 redirects**. Configuration values have hard upper bounds; see `.env.example`.
+Defaults: **3 search results**, **20,000 extracted characters**, a **10-second retrieval deadline**, **2 MB for both encoded and decoded responses**, and **3 redirects**. Configuration values have hard upper bounds; see `.env.example`.
 
 - Only HTTP/HTTPS on standard ports; URLs containing credentials are rejected.
 - Private, loopback, link-local, reserved, and transition addresses are blocked. All DNS answers are checked, the connection uses a checked address, and every redirect is revalidated.
