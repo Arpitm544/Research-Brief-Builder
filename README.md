@@ -90,6 +90,13 @@ The smoke check exercises MCP discovery/handshake, tools, three demo retrievals,
 
 The app follows the generated [mcp-use quickstart](https://docs.mcp-use.com/v2/typescript/getting-started/quickstart) conventions: exported tool definitions in `index.ts`, typed hooks in `views/`, and a replaceable provider interface in `src/`.
 
+Testing in Claude
+
+
+https://github.com/user-attachments/assets/bd412455-83f1-4646-9744-2a11530315de
+
+
+
 ## Project docs
 
 - [High-Level Design](docs/HLD.md)
