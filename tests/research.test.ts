@@ -60,9 +60,11 @@ test("publication timestamps can cross UTC midnight while invalid calendar dates
 
 test("demo search and retrieval work offline and hand off explicitly synthetic evidence", async () => {
   const search = createSearchHandler(config, new DemoSearchProvider());
-  const found = (await search({ query: demoQuestion })).structuredContent;
+  const foundResult = await search({ query: demoQuestion });
+  const found = foundResult.structuredContent;
   assert.equal(searchOutputSchema.safeParse(found).success, true);
   assert.equal(found.sources.length, 3); assert.equal(found.isDemo, true);
+  assert.match(foundResult.content[0]!.text, /finished brief/);
   let networkCalls = 0;
   const retrieve = createFetchHandler(config, async () => { networkCalls++; throw new Error("network should not run"); });
   const results = await Promise.all(found.sources.map(async (source) => (await retrieve({ url: source.url })).structuredContent));
@@ -78,8 +80,12 @@ test("demo search and retrieval work offline and hand off explicitly synthetic e
 
 test("demo search represents unrelated questions and domain filters as empty results", async () => {
   const search = createSearchHandler(config, new DemoSearchProvider());
-  assert.equal((await search({ query: "Quantum mechanics experiments" })).structuredContent.sources.length, 0);
-  assert.equal((await search({ query: demoQuestion, domains: ["energy.gov"] })).structuredContent.sources.length, 0);
+  const unrelated = await search({ query: "Quantum mechanics experiments" });
+  assert.equal(unrelated.structuredContent.sources.length, 0);
+  assert.match(unrelated.content[0]!.text, /No usable sources were found/);
+  const restricted = await search({ query: demoQuestion, domains: ["energy.gov"] });
+  assert.equal(restricted.structuredContent.sources.length, 0);
+  assert.match(restricted.content[0]!.text, /retry the same query without domains/);
 });
 
 test("demo search recognizes hyphenated heat-pump and cold-climate questions", async () => {

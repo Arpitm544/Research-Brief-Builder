@@ -7,7 +7,7 @@ export const searchInputSchema = z.object({
   domains: z.array(z.string().trim().max(253).regex(
     /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$/,
     "Use a domain such as energy.gov, without a scheme, port, or path.",
-  )).max(5).optional().describe("Optional public domains to restrict search to; at most five."),
+  )).max(5).optional().describe("Omit unless the user explicitly names sites to restrict the search. If requested, supply at most five bare domains such as energy.gov, without https:// or paths."),
   maxResults: z.number().int().min(1).max(10).optional().describe("Number of results, bounded by the server (maximum 10)."),
 }).strict();
 
