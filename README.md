@@ -4,6 +4,10 @@ An MCP app for researching a focused question, inspecting public sources, and ha
 
 **Status:** runnable MVP with two MCP tools, React views, a Browserbase Search adapter, and bounded public-page retrieval.
 
+Testing Video in Claude
+
+https://github.com/user-attachments/assets/bd412455-83f1-4646-9744-2a11530315de
+
 ## Run locally
 
 Requires Node.js **22.22.2 or later**.
@@ -90,10 +94,7 @@ The smoke check exercises MCP discovery/handshake, tools, three demo retrievals,
 
 The app follows the generated [mcp-use quickstart](https://docs.mcp-use.com/v2/typescript/getting-started/quickstart) conventions: exported tool definitions in `index.ts`, typed hooks in `views/`, and a replaceable provider interface in `src/`.
 
-Testing in Claude
 
-
-https://github.com/user-attachments/assets/bd412455-83f1-4646-9744-2a11530315de
 
 
 
