@@ -27,7 +27,7 @@ export function BriefPanel({ selectedCount, readyCount, busy, batchReading, canF
       selectRequest();
       try {
         if (document.execCommand("copy")) {
-          setCopyStatus("Request copied. Paste it into your assistant to draft the brief.");
+          setCopyStatus("Request selected. Paste it into your assistant; if nothing pastes, press Cmd+C or Ctrl+C first.");
           return;
         }
       } catch { /* Show the selected request for manual copying. */ }
