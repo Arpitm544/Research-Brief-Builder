@@ -60,9 +60,7 @@ Requests with question or topic text go to `search_sources`. Requests to read a 
 
 ## Testing in Claude
 
-Add a screen recording here showing the Research Brief Builder working in Claude. Replace the placeholder with your video link or embed it in the README.
-
-**Claude test video:** _Add video link here_
+**Claude test video:** https://github.com/user-attachments/assets/bd412455-83f1-4646-9744-2a11530315de
 
 ## Enable live search
 
