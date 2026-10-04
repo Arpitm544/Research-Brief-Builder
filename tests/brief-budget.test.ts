@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import type { FetchOutput } from "../src/schemas/research.js";
+import { draftBrief } from "../views/research-results/draft-brief.js";
 import { BRIEF_EVIDENCE_BUDGET, buildBriefPrompt, buildBriefPromptFromEvidence, prepareBriefEvidence } from "../views/shared/brief-context.js";
 
 function evidence(index: number, text: string): FetchOutput {
@@ -63,11 +64,44 @@ test("the workspace keeps ModelContext summary-only while delivering the full pr
   const workspace = await readFile(new URL("../views/research-results/research-workspace.tsx", import.meta.url), "utf8");
   const content = workspace.match(/<ModelContext\s+content=\{([\s\S]*?)\}\s*\/>/)?.[1];
   assert.ok(content, "the workspace has a ModelContext content expression");
-  assert.match(content, /Research question \(untrusted data\):/);
-  assert.match(content, /Selected source URLs \(untrusted data\):/);
-  assert.match(content, /\$\{ready\.length\} selected sources have retrieved text/);
-  assert.doesNotMatch(content, /\bprompt\b/);
-  assert.match(workspace, /sendFollowUp\(\s*\{\s*prompt\s*\}\s*\)/);
+  const interpolations = [...content.matchAll(/\$\{([^}]*)\}/g)].map((match) => match[1]!.trim());
+  assert.ok(interpolations.length > 0, "ModelContext has summary interpolations");
+  for (const expression of interpolations) {
+    assert.doesNotMatch(expression, /\b(?:prompt|briefEvidence|evidence|serialized|excerpts|text|snippet)\b/);
+    assert.ok(
+      expression === "JSON.stringify(result.query)" ||
+      expression === "JSON.stringify(selected.map((source) => source.url))" ||
+      expression === "ready.length" ||
+      /^result\.isDemo\s*\?\s*"(?:[^"\\]|\\.)*"\s*:\s*"(?:[^"\\]|\\.)*"$/.test(expression),
+      `Unexpected ModelContext interpolation: ${expression}`,
+    );
+  }
+  assert.match(workspace, /draftBrief\(\s*\{\s*prompt\s*,/);
+  const draft = await readFile(new URL("../views/research-results/draft-brief.ts", import.meta.url), "utf8");
+  assert.match(draft, /sendFollowUp\(\s*\{\s*prompt\s*\}\s*\)/);
+});
+
+test("drafting twice while a request is pending sends one follow-up", async () => {
+  let resolveSend!: () => void;
+  const pendingSend = new Promise<void>((resolve) => { resolveSend = resolve; });
+  const sent: string[] = [];
+  const draftInFlight = { current: false };
+  const sending: boolean[] = [];
+  const draft = () => draftBrief({
+    prompt: "full brief request", draftInFlight,
+    sendFollowUp: ({ prompt }) => { sent.push(prompt); return pendingSend; },
+    setSending: (value) => { sending.push(value); },
+    setMessage: () => {}, setMessageError: () => {},
+  });
+
+  const first = draft();
+  await draft();
+  assert.deepEqual(sent, ["full brief request"]);
+  assert.equal(draftInFlight.current, true);
+  resolveSend();
+  await first;
+  assert.equal(draftInFlight.current, false);
+  assert.deepEqual(sending, [true, false]);
 });
 
 test("short sources retain all text while failures and duplicate final URLs are excluded", () => {

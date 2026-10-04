@@ -6,6 +6,7 @@ import { Warnings } from "../shared/components.js";
 import { useSourceRetrieval } from "./use-source-retrieval.js";
 import { SourceCard } from "./source-card.js";
 import { BriefPanel } from "./brief-panel.js";
+import { draftBrief } from "./draft-brief.js";
 
 export function ResearchWorkspace({ result, searchPending }: { result: SearchOutput; searchPending: boolean }) {
   const { hostCapabilities } = useHostContext();
@@ -39,12 +40,7 @@ export function ResearchWorkspace({ result, searchPending }: { result: SearchOut
   }
 
   async function draft() {
-    if (!prompt || draftInFlight.current) return;
-    draftInFlight.current = true;
-    setSending(true); setMessage(undefined); setMessageError(undefined);
-    try { await sendFollowUp({ prompt }); setMessage("Brief requested. Continue in the conversation to see the assistant's draft."); }
-    catch (error) { setMessageError(error instanceof Error ? error.message : "The host could not accept the brief request."); }
-    finally { draftInFlight.current = false; setSending(false); }
+    await draftBrief({ prompt, draftInFlight, sendFollowUp, setSending, setMessage, setMessageError });
   }
 
   function open(url: string) {
